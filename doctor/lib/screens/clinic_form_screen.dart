@@ -80,6 +80,7 @@ class _ClinicFormScreenState extends State<ClinicFormScreen> {
         clinicFee: double.parse(_feeController.text.trim()),
         doctorId: doctor.id,
         isActive: true,
+        isOnline: false,
         createdAt: widget.clinic?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );

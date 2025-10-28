@@ -35,14 +35,18 @@ const clinicSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
-  doctor: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Doctor',
-    required: true
+  doctorId: {
+    type: Number,
+    required: true,
+    ref: 'Doctor'
   },
   isActive: {
     type: Boolean,
     default: true
+  },
+  isOnline: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
@@ -51,7 +55,7 @@ const clinicSchema = new mongoose.Schema({
 // Create indexes for better performance
 clinicSchema.index({ clinicId: 1 });
 clinicSchema.index({ regNo: 1 });
-clinicSchema.index({ doctor: 1 });
+clinicSchema.index({ doctorId: 1 });
 
 // Auto-increment clinicId before saving
 clinicSchema.pre('save', async function(next) {
@@ -68,6 +72,6 @@ clinicSchema.pre('save', async function(next) {
 });
 
 // Index for doctor lookup (removed unique constraint to allow multiple clinics)
-clinicSchema.index({ doctor: 1 });
+clinicSchema.index({ doctorId: 1 });
 
 module.exports = mongoose.model('Clinic', clinicSchema);

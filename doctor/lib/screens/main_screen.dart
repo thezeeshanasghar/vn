@@ -28,7 +28,7 @@ class _MainScreenState extends State<MainScreen> {
     _loadClinics();
   }
 
-  Future<void> _loadClinics() async {
+  Future<void> _loadClinics({bool skipNavigation = false}) async {
     setState(() {
       _isLoadingClinics = true;
     });
@@ -43,20 +43,42 @@ class _MainScreenState extends State<MainScreen> {
           _clinics = clinics;
         });
         
-        // Smart routing: If no clinics, redirect to clinic form
-        if (clinics.isEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              _selectedIndex = 1; // Go to clinic section
+        // Auto-set online for single clinic doctors
+        if (clinics.isNotEmpty) {
+          // Check if any clinic is already online
+          final onlineClinics = clinics.where((c) => c.isOnline).toList();
+          
+          // If single clinic and none online, auto-set it
+          if (clinics.length == 1 && onlineClinics.isEmpty) {
+            try {
+              await ClinicService.autoSetClinicOnline(doctor.id);
+              // Reload clinics to get updated status
+              final updatedClinics = await ClinicService.getClinicsByDoctor(doctor.id);
+              setState(() {
+                _clinics = updatedClinics;
+              });
+            } catch (error) {
+              print('Auto-set online error: $error');
+            }
+          }
+        }
+        
+        // Smart routing: Only redirect if not skipping navigation (e.g., after toggle)
+        if (!skipNavigation) {
+          if (clinics.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              setState(() {
+                _selectedIndex = 1; // Go to clinic section
+              });
             });
-          });
-        } else if (clinics.isNotEmpty && _selectedIndex == 1) {
-          // If clinics exist and we're on clinic page, go to dashboard
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              _selectedIndex = 0; // Go to dashboard
+          } else if (clinics.isNotEmpty && _selectedIndex == 1) {
+            // If clinics exist and we're on clinic page, go to dashboard
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              setState(() {
+                _selectedIndex = 0; // Go to dashboard
+              });
             });
-          });
+          }
         }
       }
     } catch (error) {
@@ -518,17 +540,33 @@ class _MainScreenState extends State<MainScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade50,
+                        color: clinic.isOnline ? Colors.green.shade50 : Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.green.shade200),
-                      ),
-                      child: Text(
-                        'Active',
-                        style: TextStyle(
-                          color: Colors.green.shade700,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                        border: Border.all(
+                          color: clinic.isOnline ? Colors.green.shade200 : Colors.grey.shade200
                         ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: clinic.isOnline ? Colors.green : Colors.grey,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            clinic.isOnline ? 'Online' : 'Offline',
+                            style: TextStyle(
+                              color: clinic.isOnline ? Colors.green.shade700 : Colors.grey.shade700,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -621,7 +659,50 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
+                    if (_clinics.length > 1) ...[
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: clinic.isOnline ? Colors.red.shade50 : Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: clinic.isOnline ? Colors.red.shade200 : Colors.green.shade200
+                            ),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _toggleClinicOnlineStatus(clinic, !clinic.isOnline),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      clinic.isOnline ? Icons.visibility_off : Icons.visibility,
+                                      color: clinic.isOnline ? Colors.red.shade600 : Colors.green.shade600,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      clinic.isOnline ? 'Offline' : 'Online',
+                                      style: TextStyle(
+                                        color: clinic.isOnline ? Colors.red.shade600 : Colors.green.shade600,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Expanded(
                       child: Container(
                         decoration: BoxDecoration(
@@ -859,6 +940,78 @@ class _MainScreenState extends State<MainScreen> {
           ),
         );
         _loadClinics(); // Reload clinics
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('An error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleClinicOnlineStatus(Clinic clinic, bool isOnline) async {
+    // If trying to set clinic online, show confirmation for multiple clinics
+    if (isOnline && _clinics.length > 1) {
+      final onlineClinics = _clinics.where((c) => c.isOnline).toList();
+      if (onlineClinics.isNotEmpty) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Switch Clinic Online'),
+            content: Text(
+              'Setting "${clinic.name}" online will automatically set "${onlineClinics.first.name}" offline. '
+              'Only one clinic can be online at a time. Continue?'
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.blue),
+                child: const Text('Continue'),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirmed != true) return;
+      }
+    }
+
+    try {
+      final result = await ClinicService.toggleClinicOnline(clinic.id, isOnline);
+      
+      if (result['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        _loadClinics(skipNavigation: true); // Reload clinics to show updated status without navigation
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

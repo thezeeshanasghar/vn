@@ -12,14 +12,14 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-      - ./seed-data.js:/docker-entrypoint-initdb.d/seed-data.js:ro
+      - ./backend/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./backend/seed-data.js:/docker-entrypoint-initdb.d/seed-data.js:ro
     networks:
       - vaccine-network
 
   # Backend API
   backend:
-    build: .
+    build: ./backend
     container_name: vaccine-backend
     restart: unless-stopped
     environment:
@@ -33,15 +33,15 @@ services:
     networks:
       - vaccine-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Admin System (Vaccine App)
+  # Admin System
   admin-system:
     build: 
-      context: ./vaccine_app
+      context: ./admin
       dockerfile: Dockerfile
     container_name: vaccine-admin-system
     restart: unless-stopped
@@ -55,7 +55,7 @@ services:
   # Doctor Portal
   doctor-portal:
     build: 
-      context: ./doctor_portal_app
+      context: ./doctor
       dockerfile: Dockerfile
     container_name: doctor-portal-app
     restart: unless-stopped
@@ -69,7 +69,7 @@ services:
   # Patient Panel
   patient-panel:
     build: 
-      context: ./patient_panel
+      context: ./patient
       dockerfile: Dockerfile
     container_name: patient-panel-app
     restart: unless-stopped
