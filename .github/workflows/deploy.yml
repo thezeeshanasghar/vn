@@ -2,7 +2,7 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [master]
+    branches: [main, master]
   workflow_dispatch: # Allows manual trigger
 
 jobs:
@@ -15,46 +15,64 @@ jobs:
 
       - name: Configure SSH key
         run: |
+          # Validate secrets are set
+          if [ -z "${{ secrets.EC2_HOST }}" ]; then
+            echo "ERROR: EC2_HOST secret is not set!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "ERROR: EC2_SSH_KEY secret is not set!"
+            exit 1
+          fi
+          
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key.pem
           chmod 600 ~/.ssh/deploy_key.pem
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          echo "Connecting to EC2_HOST: ${{ secrets.EC2_HOST }}"
+          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          echo "SSH configuration completed"
 
       - name: Deploy to EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-          ssh -i ~/.ssh/deploy_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # Navigate to application directory
-            cd ${{ secrets.APP_DIRECTORY }}
-            
-            # Pull latest code
-            git pull origin ${{ github.ref_name }}
-            
-            # Stop existing containers
-            docker-compose down
-            
-            # Remove old images (optional, to save disk space)
-            docker system prune -f
-            
-            # Build and start containers
-            docker-compose up -d --build
-            
-            # Show running containers
-            docker-compose ps
-            
-            echo "Deployment completed successfully!"
-          EOF
+          echo "Deploying to EC2..."
+          ssh -i ~/.ssh/deploy_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cd /home/ubuntu/vn && \
+            echo 'Current directory: '\$(pwd) && \
+            echo 'Directory contents:' && \
+            ls -la && \
+            echo 'Checking git status...' && \
+            git status || echo 'Warning: Not a git repo' && \
+            git remote set-url origin https://github.com/actuallytayyab/vacc-test.git || echo 'Warning: git remote already set' && \
+            git pull origin master || echo 'Warning: git pull failed' && \
+            echo 'Stopping existing containers...' && \
+            sudo docker-compose down || echo 'No containers to stop' && \
+            echo 'Pruning old images...' && \
+            sudo docker system prune -f || echo 'Pruning failed' && \
+            echo 'Building and starting containers...' && \
+            sudo docker-compose up -d --build && \
+            echo 'Waiting for containers to start...' && \
+            sleep 5 && \
+            echo 'Checking running containers:' && \
+            sudo docker-compose ps && \
+            echo 'All Docker containers:' && \
+            sudo docker ps -a && \
+            echo 'Deployment completed successfully!'"
 
       - name: Verify deployment
         run: |
           echo "Waiting for services to start..."
-          sleep 10
+          sleep 15
           
-          # Check if backend is running
-          ssh -i ~/.ssh/deploy_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-            "docker exec vaccine-backend node -e \"require('http').get('http://localhost:3000/api/health', (res) => { console.log('Backend Health:', res.statusCode === 200 ? 'OK' : 'FAILED'); process.exit(res.statusCode === 200 ? 0 : 1) })\""
+          echo "Checking container status..."
+          ssh -i ~/.ssh/deploy_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo docker ps -a"
           
-          echo "✅ All services are running!"
-
+          echo "Checking if backend container exists..."
+          if ssh -i ~/.ssh/deploy_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo docker ps -a | grep vaccine-backend"; then
+            echo "Backend container found, checking health..."
+            ssh -i ~/.ssh/deploy_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+              "sudo docker exec vaccine-backend node -e \"require('http').get('http://localhost:3000/api/health', (res) => { console.log('Backend Health:', res.statusCode === 200 ? 'OK' : 'FAILED'); process.exit(res.statusCode === 200 ? 0 : 1) })\""
+            echo "✅ All services are running!"
+          else
+            echo "❌ Backend container not found!"
+            ssh -i ~/.ssh/deploy_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo docker-compose logs backend"
+            exit 1
+          fi
