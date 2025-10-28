@@ -120,6 +120,66 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
     }
   }
 
+  Future<void> _toggleClinicOnlineStatus(Clinic clinic, bool isOnline) async {
+    // If trying to set clinic online, show confirmation for multiple clinics
+    if (isOnline && _clinics.length > 1) {
+      final onlineClinics = _clinics.where((c) => c.isOnline).toList();
+      if (onlineClinics.isNotEmpty) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Switch Clinic Online'),
+            content: Text(
+              'Setting "${clinic.name}" online will automatically set "${onlineClinics.first.name}" offline. '
+              'Only one clinic can be online at a time. Continue?'
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.blue),
+                child: const Text('Continue'),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirmed != true) return;
+      }
+    }
+
+    try {
+      final result = await ClinicService.toggleClinicOnline(clinic.id, isOnline);
+      
+      if (result['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadClinics(); // Reload clinics to show updated status
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -382,6 +442,83 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
             _buildClinicDetailRow(Icons.phone, clinic.phoneNumber),
             const SizedBox(height: 8),
             _buildClinicDetailRow(Icons.receipt, 'Fee: \$${clinic.clinicFee.toStringAsFixed(2)}'),
+            const SizedBox(height: 16),
+
+            // Online Status Section
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: clinic.isOnline ? Colors.green.shade50 : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: clinic.isOnline ? Colors.green.shade400 : Colors.grey.shade300,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: clinic.isOnline ? Colors.green : Colors.grey,
+                          shape: BoxShape.circle,
+                          boxShadow: clinic.isOnline ? [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.4),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ] : [],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        clinic.isOnline ? 'Currently Online' : 'Currently Offline',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: clinic.isOnline ? Colors.green.shade700 : Colors.grey.shade700,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (_clinics.length == 1)
+                        Switch(
+                          value: clinic.isOnline,
+                          onChanged: (value) => _toggleClinicOnlineStatus(clinic, value),
+                          activeColor: Colors.green,
+                        ),
+                    ],
+                  ),
+                  if (_clinics.length > 1) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: clinic.isOnline 
+                            ? () => _toggleClinicOnlineStatus(clinic, false)
+                            : () => _toggleClinicOnlineStatus(clinic, true),
+                        icon: Icon(
+                          clinic.isOnline ? Icons.visibility_off : Icons.visibility,
+                          size: 16,
+                        ),
+                        label: Text(clinic.isOnline ? 'Set Offline' : 'Set Online'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: clinic.isOnline ? Colors.red.shade600 : Colors.green.shade600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
 
             // Action Buttons
