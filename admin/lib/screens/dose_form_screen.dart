@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/services/api_service.dart';
 import '../models/dose.dart';
 import '../models/vaccine.dart';
-import '../services/api_service.dart';
+import '../core/constants/app_colors.dart';
+
 
 class DoseFormScreen extends StatefulWidget {
   final Dose? dose;
@@ -67,7 +69,7 @@ class _DoseFormScreenState extends State<DoseFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading vaccines: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -97,9 +99,9 @@ class _DoseFormScreenState extends State<DoseFormScreen> {
         await ApiService.updateDose(widget.dose!.id!, dose);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Dose updated successfully'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('Dose updated successfully'),
+              backgroundColor: AppColors.secondary,
             ),
           );
         }
@@ -108,9 +110,9 @@ class _DoseFormScreenState extends State<DoseFormScreen> {
         await ApiService.createDose(dose);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Dose created successfully'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('Dose created successfully'),
+              backgroundColor: AppColors.secondary,
             ),
           );
         }
@@ -124,7 +126,7 @@ class _DoseFormScreenState extends State<DoseFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -144,8 +146,8 @@ class _DoseFormScreenState extends State<DoseFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Dose' : 'Add Dose'),
-        backgroundColor: Colors.orange[600],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
         actions: [
           if (_isLoading)
             const Padding(
@@ -167,16 +169,20 @@ class _DoseFormScreenState extends State<DoseFormScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.orange[600]!,
-              Colors.orange[400]!,
-              Colors.white,
+              AppColors.primary,
+              AppColors.primaryLight,
+              AppColors.white,
             ],
             stops: const [0.0, 0.1, 0.1],
           ),
         ),
         child: SafeArea(
           child: _isLoadingVaccines
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                  ),
+                )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Form(
@@ -186,6 +192,7 @@ class _DoseFormScreenState extends State<DoseFormScreen> {
                       children: [
                         Card(
                           elevation: 8,
+                          color: AppColors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -199,7 +206,7 @@ class _DoseFormScreenState extends State<DoseFormScreen> {
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.orange[700],
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 20),
@@ -341,8 +348,8 @@ class _DoseFormScreenState extends State<DoseFormScreen> {
                         ElevatedButton(
                           onPressed: _isLoading ? null : _saveDose,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange[600],
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),

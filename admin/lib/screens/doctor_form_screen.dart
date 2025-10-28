@@ -5,8 +5,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
+import '../core/services/api_service.dart';
 import '../models/doctor.dart';
-import '../services/api_service.dart';
+import '../core/constants/app_colors.dart';
+
 
 class DoctorFormScreen extends StatefulWidget {
   final Doctor? doctor;
@@ -102,7 +104,7 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error picking image: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -139,7 +141,7 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error taking photo: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -175,10 +177,10 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
         await ApiService.updateDoctor(widget.doctor!.id!, doctor);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Doctor updated successfully'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
+            SnackBar(
+              content: const Text('Doctor updated successfully'),
+              backgroundColor: AppColors.secondary,
+              duration: const Duration(seconds: 3),
             ),
           );
           Navigator.of(context).pop(true);
@@ -197,7 +199,7 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -214,35 +216,36 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 8),
-              Text('Doctor Created Successfully'),
+              Icon(Icons.check_circle, color: AppColors.secondary),
+              const SizedBox(width: 8),
+              Text('Doctor Created Successfully', style: TextStyle(color: AppColors.textPrimary)),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('The doctor has been created with the following auto-generated password:'),
+              Text('The doctor has been created with the following auto-generated password:', style: TextStyle(color: AppColors.textPrimary)),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: AppColors.background,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
                         password,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'monospace',
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -262,11 +265,11 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Please save this password securely and share it with the doctor.',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.orange,
+                  color: AppColors.primary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -357,35 +360,85 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(_isEditMode ? 'Edit Doctor' : 'Add Doctor'),
-        backgroundColor: Colors.blue[600],
-        foregroundColor: Colors.white,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                _isEditMode ? Icons.edit : Icons.person_add,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(_isEditMode ? 'Edit Doctor' : 'Add Doctor'),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.primary.withValues(alpha: 0.05),
+              AppColors.white,
+            ],
+            stops: const [0.0, 0.3],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // Basic Information Card
               Card(
-                margin: const EdgeInsets.only(bottom: 20),
-                elevation: 4,
+                margin: const EdgeInsets.only(bottom: 24),
+                elevation: 0,
+                color: AppColors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                        spreadRadius: 0,
+                      ),
+                      BoxShadow(
+                        color: AppColors.shadow.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                        spreadRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Basic Information',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -468,13 +521,15 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
                     ],
                   ),
                 ),
+                ),
               ),
 
               // Professional Information Card (only for edit mode)
-              if (_isEditMode) ...[
+              if (_isEditMode)
                 Card(
                   margin: const EdgeInsets.only(bottom: 20),
                   elevation: 4,
+                  color: AppColors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -483,11 +538,12 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Professional Information',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -535,11 +591,12 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
                         // Image Upload Section
                         Row(
                           children: [
-                            const Text(
+                            Text(
                               'Profile Image',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             if (kIsWeb) ...[
@@ -547,14 +604,14 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue[100],
+                                  color: AppColors.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Web Mode',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.blue,
+                                    color: AppColors.primary,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -570,7 +627,7 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
                               width: 80,
                               height: 80,
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey[300]!),
+                                border: Border.all(color: AppColors.border),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: _buildImagePreview(),
@@ -587,8 +644,8 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
                                       icon: const Icon(Icons.photo_library, size: 18),
                                       label: const Text('Gallery'),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue[100],
-                                        foregroundColor: Colors.blue[700],
+                                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                        foregroundColor: AppColors.primary,
                                         elevation: 0,
                                       ),
                                     ),
@@ -601,8 +658,8 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
                                       icon: const Icon(Icons.camera_alt, size: 18),
                                       label: Text(kIsWeb ? 'Camera (N/A)' : 'Camera'),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: kIsWeb ? Colors.grey[100] : Colors.green[100],
-                                        foregroundColor: kIsWeb ? Colors.grey[500] : Colors.green[700],
+                                        backgroundColor: kIsWeb ? AppColors.background : AppColors.secondary.withValues(alpha: 0.1),
+                                        foregroundColor: kIsWeb ? AppColors.textSecondary : AppColors.secondary,
                                         elevation: 0,
                                       ),
                                     ),
@@ -650,7 +707,6 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
                     ),
                   ),
                 ),
-              ],
 
               const SizedBox(height: 20),
               SizedBox(
@@ -669,8 +725,8 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
                       : Icon(_isEditMode ? Icons.save : Icons.add),
                   label: Text(_isEditMode ? 'Update Doctor' : 'Create Doctor'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[600],
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -682,6 +738,7 @@ class _DoctorFormScreenState extends State<DoctorFormScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../core/services/api_service.dart';
 import '../models/brand.dart';
-import '../services/api_service.dart';
+import '../core/constants/app_colors.dart';
+
 
 class BrandFormScreen extends StatefulWidget {
   final Brand? brand;
@@ -48,23 +50,23 @@ class _BrandFormScreenState extends State<BrandFormScreen> {
         // Update existing brand
         await ApiService.updateBrand(widget.brand!.id!, brand);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Brand updated successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Brand updated successfully'),
+            backgroundColor: AppColors.secondary,
+          ),
+        );
         }
       } else {
         // Create new brand
         await ApiService.createBrand(brand);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Brand created successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Brand created successfully'),
+            backgroundColor: AppColors.secondary,
+          ),
+        );
         }
       }
       if (mounted) {
@@ -75,7 +77,7 @@ class _BrandFormScreenState extends State<BrandFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -91,8 +93,8 @@ class _BrandFormScreenState extends State<BrandFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.brand == null ? 'Add Brand' : 'Edit Brand'),
-        backgroundColor: Colors.purple[600],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -104,6 +106,7 @@ class _BrandFormScreenState extends State<BrandFormScreen> {
               Card(
                 margin: const EdgeInsets.only(bottom: 20),
                 elevation: 4,
+                color: AppColors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -112,11 +115,12 @@ class _BrandFormScreenState extends State<BrandFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Brand Information',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -146,19 +150,19 @@ class _BrandFormScreenState extends State<BrandFormScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.blue[50],
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue[200]!),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.blue[600], size: 20),
+                            Icon(Icons.info_outline, color: AppColors.primary, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Brand ID will be automatically generated when you save.',
                                 style: TextStyle(
-                                  color: Colors.blue[700],
+                                  color: AppColors.textPrimary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -187,8 +191,8 @@ class _BrandFormScreenState extends State<BrandFormScreen> {
                       : Icon(widget.brand == null ? Icons.add : Icons.save),
                   label: Text(widget.brand == null ? 'Create Brand' : 'Save Changes'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple[600],
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),

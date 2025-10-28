@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../core/services/api_service.dart';
 import '../models/dose.dart';
-import '../services/api_service.dart';
+import '../core/constants/app_colors.dart';
+
 import 'dose_form_screen.dart';
 
 class DoseListScreen extends StatefulWidget {
@@ -47,9 +49,9 @@ class _DoseListScreenState extends State<DoseListScreen> {
       _loadDoses(); // Reload the list
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dose deleted successfully'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Dose deleted successfully'),
+            backgroundColor: AppColors.secondary,
           ),
         );
       }
@@ -58,7 +60,7 @@ class _DoseListScreenState extends State<DoseListScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting dose: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -84,7 +86,7 @@ class _DoseListScreenState extends State<DoseListScreen> {
                   _deleteDose(dose.id!);
                 }
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              child: Text('Delete', style: TextStyle(color: AppColors.primary)),
             ),
           ],
         );
@@ -97,8 +99,8 @@ class _DoseListScreenState extends State<DoseListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Doses'),
-        backgroundColor: Colors.orange[600],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -112,16 +114,20 @@ class _DoseListScreenState extends State<DoseListScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.orange[600]!,
-              Colors.orange[400]!,
-              Colors.white,
+              AppColors.primary,
+              AppColors.primaryLight,
+              AppColors.white,
             ],
             stops: const [0.0, 0.1, 0.1],
           ),
         ),
         child: SafeArea(
           child: isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                  ),
+                )
               : errorMessage != null
                   ? Center(
                       child: Column(
@@ -130,26 +136,30 @@ class _DoseListScreenState extends State<DoseListScreen> {
                           Icon(
                             Icons.error_outline,
                             size: 64,
-                            color: Colors.red[300],
+                            color: AppColors.primary,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Error loading doses',
                             style: TextStyle(
                               fontSize: 18,
-                              color: Colors.red[700],
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             errorMessage!,
-                            style: TextStyle(color: Colors.red[600]),
+                            style: TextStyle(color: AppColors.textSecondary),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
                             onPressed: _loadDoses,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                            ),
                             child: const Text('Retry'),
                           ),
                         ],
@@ -163,21 +173,21 @@ class _DoseListScreenState extends State<DoseListScreen> {
                               Icon(
                                 Icons.medication_outlined,
                                 size: 64,
-                                color: Colors.grey[400],
+                                color: AppColors.textTertiary,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'No doses found',
                                 style: TextStyle(
                                   fontSize: 18,
-                                  color: Colors.grey[600],
+                                  color: AppColors.textPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Add your first dose to get started',
-                                style: TextStyle(color: Colors.grey[500]),
+                                style: TextStyle(color: AppColors.textSecondary),
                               ),
                             ],
                           ),
@@ -192,34 +202,48 @@ class _DoseListScreenState extends State<DoseListScreen> {
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 elevation: 4,
+                                color: AppColors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: ListTile(
                                   contentPadding: const EdgeInsets.all(16),
                                   leading: CircleAvatar(
-                                    backgroundColor: Colors.orange[100],
+                                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                                     child: Icon(
                                       Icons.medication,
-                                      color: Colors.orange[600],
+                                      color: AppColors.primary,
                                     ),
                                   ),
                                   title: Text(
                                     dose.name ?? 'Unnamed Dose',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   subtitle: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 4),
-                                      Text('Vaccine ID: ${dose.vaccineID == null || dose.vaccineID == '' ? 'Not assigned' : (dose.vaccineID is Map ? dose.vaccineID['vaccineID'] : dose.vaccineID)}'),
+                                      Text(
+                                        'Vaccine ID: ${dose.vaccineID == null || dose.vaccineID == '' ? 'Not assigned' : (dose.vaccineID is Map ? dose.vaccineID['vaccineID'] : dose.vaccineID)}',
+                                        style: TextStyle(color: AppColors.textSecondary),
+                                      ),
                                       if (dose.vaccine != null)
-                                        Text('Vaccine: ${dose.vaccine!.name}'),
-                                      Text('Age Range: ${dose.minAge}-${dose.maxAge} years'),
-                                      Text('Min Gap: ${dose.minGap} days'),
+                                        Text(
+                                          'Vaccine: ${dose.vaccine!.name}',
+                                          style: TextStyle(color: AppColors.textSecondary),
+                                        ),
+                                      Text(
+                                        'Age Range: ${dose.minAge}-${dose.maxAge} years',
+                                        style: TextStyle(color: AppColors.textSecondary),
+                                      ),
+                                      Text(
+                                        'Min Gap: ${dose.minGap} days',
+                                        style: TextStyle(color: AppColors.textSecondary),
+                                      ),
                                     ],
                                   ),
                                   trailing: PopupMenuButton<String>(
@@ -238,23 +262,23 @@ class _DoseListScreenState extends State<DoseListScreen> {
                                       }
                                     },
                                     itemBuilder: (context) => [
-                                      const PopupMenuItem(
+                                      PopupMenuItem(
                                         value: 'edit',
                                         child: Row(
                                           children: [
-                                            Icon(Icons.edit, color: Colors.blue),
-                                            SizedBox(width: 8),
-                                            Text('Edit'),
+                                            Icon(Icons.edit, color: AppColors.primary),
+                                            const SizedBox(width: 8),
+                                            Text('Edit', style: TextStyle(color: AppColors.textPrimary)),
                                           ],
                                         ),
                                       ),
-                                      const PopupMenuItem(
+                                      PopupMenuItem(
                                         value: 'delete',
                                         child: Row(
                                           children: [
-                                            Icon(Icons.delete, color: Colors.red),
-                                            SizedBox(width: 8),
-                                            Text('Delete'),
+                                            Icon(Icons.delete, color: AppColors.primary),
+                                            const SizedBox(width: 8),
+                                            Text('Delete', style: TextStyle(color: AppColors.textPrimary)),
                                           ],
                                         ),
                                       ),
@@ -276,8 +300,8 @@ class _DoseListScreenState extends State<DoseListScreen> {
             ),
           ).then((_) => _loadDoses());
         },
-        backgroundColor: Colors.orange[600],
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: AppColors.white),
       ),
     );
   }
