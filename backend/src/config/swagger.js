@@ -1,3 +1,4 @@
+const path = require('path');
 const swaggerJSDoc = require('swagger-jsdoc');
 
 const options = {
@@ -161,7 +162,11 @@ const options = {
       }
     }
   },
-  apis: ['./routes/*.js', './server.js']
+  // Use absolute paths so this works regardless of process.cwd()
+  apis: [
+    path.join(__dirname, '..', 'routes', '*.js'),
+    path.join(__dirname, '..', 'app.js')
+  ]
 };
 
 const specs = swaggerJSDoc(options);
