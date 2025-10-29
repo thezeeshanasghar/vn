@@ -7,6 +7,7 @@ import '../models/clinic.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
 import 'patient_list_screen.dart';
+import 'doctor_schedule_screen.dart';
 import 'clinic_form_screen.dart';
 import 'clinic_list_screen.dart';
 import '../widgets/sidebar.dart';
@@ -162,12 +163,14 @@ class _MainScreenState extends State<MainScreen> {
           clinicId: onlineClinic.clinicId,
         );
       case 3:
-        return _buildComingSoonView('Appointments');
+        return const DoctorScheduleScreen();
       case 4:
-        return _buildComingSoonView('Medical Records');
+        return _buildComingSoonView('Appointments');
       case 5:
-        return _buildComingSoonView('Settings');
+        return _buildComingSoonView('Medical Records');
       case 6:
+        return _buildComingSoonView('Settings');
+      case 7:
         return _buildComingSoonView('Help & Support');
       default:
         return const DashboardScreen();
@@ -1316,12 +1319,14 @@ class _MainScreenState extends State<MainScreen> {
       case 2:
         return 'Patients';
       case 3:
-        return 'Appointments';
+        return 'Doctor Schedule';
       case 4:
-        return 'Medical Records';
+        return 'Appointments';
       case 5:
-        return 'Settings';
+        return 'Medical Records';
       case 6:
+        return 'Settings';
+      case 7:
         return 'Help & Support';
       default:
         return 'Dashboard';
