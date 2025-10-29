@@ -17,7 +17,7 @@ const patientRoutes = require('./routes/patientRoutes');
 const doctorScheduleRoutes = require('./routes/doctorScheduleRoutes');
 
 // Load environment variables
-require('dotenv').config({ path: path.join(__dirname, 'config.env') });
+require('dotenv').config({ path: path.join(__dirname, '..', 'config.env') });
 
 // Connect to database
 connectDB();
