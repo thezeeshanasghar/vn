@@ -164,8 +164,8 @@ const options = {
   },
   // Use absolute paths so this works regardless of process.cwd()
   apis: [
-    path.join(__dirname, '..', 'routes', '*.js'),
-    path.join(__dirname, '..', 'app.js')
+    path.join(__dirname, 'routes', '*.js'),
+    path.join(__dirname, 'app.js')
   ]
 };
 
