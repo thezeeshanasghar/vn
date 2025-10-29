@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../services/auth_service.dart';
-import 'main_screen.dart';
+import 'package:get/get.dart';
+import '../core/constants/app_colors.dart';
+import '../core/constants/app_text_styles.dart';
+import '../core/controllers/auth_controller.dart';
+import '../core/widgets/app_button.dart';
+import '../core/widgets/app_text_field.dart';
+import '../core/widgets/app_card.dart';
+import '../core/router/app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,38 +17,11 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _identifierController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
+  final _identifierController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final AuthController _authController = Get.find<AuthController>();
+  
   bool _isPasswordVisible = false;
-
-  Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final String? errorMessage = await authService.login(
-        _identifierController.text.trim(),
-        _passwordController.text.trim(),
-      );
-
-      setState(() {
-        _isLoading = false;
-      });
-
-            if (errorMessage == null) {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const MainScreen()),
-              );
-            } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
 
   @override
   void dispose() {
@@ -52,141 +30,130 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _login() async {
+    if (_formKey.currentState!.validate()) {
+      final success = await _authController.login(
+        _identifierController.text.trim(),
+        _passwordController.text.trim(),
+      );
+      
+      if (success) {
+        Get.offAllNamed(AppRoutes.main);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade800, Colors.blue.shade400],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+        decoration: const BoxDecoration(
+          color: AppColors.primary, // Solid blue background
         ),
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Medical Icon
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(50),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.medical_services_rounded,
-                      size: 50,
-                      color: Colors.white,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Medical Icon
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight, // Lighter blue circle
+                    borderRadius: BorderRadius.circular(60),
+                    border: Border.all(
+                      color: AppColors.white,
+                      width: 2,
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  
-                  // Title
-                  const Text(
-                    'Doctor Portal',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  child: const Icon(
+                    Icons.medical_services_rounded,
+                    size: 60,
+                    color: AppColors.white,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                
+                // Title
+                const Text(
+                  'Doctor Portal',
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Subtitle
+                const Text(
+                  'Patient Management System',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.normal,
+                    color: AppColors.white,
+                  ),
+                ),
+                const SizedBox(height: 60),
+                
+                // Login Card
+                AppCard(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        AppTextField(
+                          controller: _identifierController,
+                          label: 'Email or Phone Number',
+                          hint: 'Enter your email or phone number',
+                          prefixIcon: Icons.person,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email or phone number';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        AppTextField(
+                          controller: _passwordController,
+                          label: 'Password',
+                          hint: 'Enter your password',
+                          prefixIcon: Icons.lock,
+                          suffixIcon: _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                          onSuffixIconTap: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
+                          obscureText: !_isPasswordVisible,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            if (value.length < 6) {
+                              return 'Password must be at least 6 characters long';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 30),
+                        Obx(() => AppButton(
+                          text: 'Sign In',
+                          onPressed: _authController.isLoading.value ? null : _login,
+                          isLoading: _authController.isLoading.value,
+                          type: AppButtonType.primary,
+                          size: AppButtonSize.large,
+                          width: double.infinity,
+                        )),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  
-                  // Subtitle
-                  Text(
-                    'Patient Management System',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
-                  const SizedBox(height: 50),
-                  
-                  // Login Card
-                  Card(
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            controller: _identifierController,
-                            decoration: const InputDecoration(
-                              labelText: 'Email or Phone Number',
-                              prefixIcon: Icon(Icons.person),
-                            ),
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your email or phone number';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: !_isPasswordVisible,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              prefixIcon: const Icon(Icons.lock),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _isPasswordVisible = !_isPasswordVisible;
-                                  });
-                                },
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
-                              }
-                              if (value.length < 6) {
-                                return 'Password must be at least 6 characters long';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 30),
-                          _isLoading
-                              ? const CircularProgressIndicator(color: Colors.blueAccent)
-                              : ElevatedButton(
-                                  onPressed: _login,
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size(double.infinity, 50),
-                                    backgroundColor: Colors.blueAccent,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 4,
-                                  ),
-                                  child: const Text(
-                                    'Sign In',
-                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
