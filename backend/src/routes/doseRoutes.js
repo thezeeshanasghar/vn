@@ -237,8 +237,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { name, minAge, maxAge, minGap, vaccineID } = req.body;
-
-    const dose = await Dose.findById(req.params.id);
+    const dose = await Dose.findOne({ doseId: Number(req.params.id) });
     
     if (!dose) {
       return res.status(404).json({
@@ -285,7 +284,7 @@ router.put('/:id', async (req, res) => {
 // DELETE dose
 router.delete('/:id', async (req, res) => {
   try {
-    const dose = await Dose.findByIdAndDelete(req.params.id);
+    const dose = await Dose.findOneAndDelete({ doseId: Number(req.params.id) });
     
     if (!dose) {
       return res.status(404).json({

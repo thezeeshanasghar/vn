@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -15,7 +16,7 @@ const clinicRoutes = require('./routes/clinicRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 
 // Load environment variables
-require('dotenv').config({ path: './config.env' });
+require('dotenv').config({ path: path.join(__dirname, 'config.env') });
 
 // Connect to database
 connectDB();

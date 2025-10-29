@@ -1,0 +1,94 @@
+---
+alwaysApply: true
+---
+# Child Vaccination Management System - Cursor Rules
+
+## Project Overview
+This is a comprehensive child vaccination management system where pediatric specialists (doctors) manage vaccination schedules for children across multiple clinics in different cities. The system includes inventory management, patient scheduling, alert notifications, and multi-role access control.
+
+## Core Domain Entities & Relationships
+
+### Primary Entities:
+- **Doctor**: Child specialists who own and manage clinics
+- **Child**: Patients (children) with vaccination schedules
+- **Clinic**: Medical facilities owned by doctors in different cities
+- **PersonalAssistant (PA)**: Staff members with delegated permissions for specific clinics
+- **Vaccine**: Medical vaccines with multiple brands and doses
+- **Schedule**: Vaccination appointments and timelines
+- **Stock/Inventory**: Vaccine inventory management per clinic
+
+### Key Relationships:
+- Doctor → Clinics (1:many)
+- Doctor → PersonalAssistants (1:many)
+- Clinic → Children (1:many)
+- Clinic → BrandAmounts (inventory per clinic)
+- PersonalAssistant → PaAccess → Clinics (many:many with permissions)
+- Child → Schedules (1:many vaccination appointments)
+- Vaccine → Brands → Doses (hierarchical structure)
+- Schedule → Dose → Brand (vaccination details)
+
+## Technical Architecture
+
+### Backend (Nodejs Express based API):
+
+### Frontend Applications (Flutter):
+- **Admin App**: System administration and oversight
+- **Doctor App**: Clinic management, patient scheduling, inventory
+- **PA App**: Delegated clinic operations with permission-based access
+- **Patient App**: Parent/guardian access to child schedules and documents
+- **Inventory App**: Vaccine inventory management per clinic
+
+## Business Logic Patterns
+
+### Vaccination Scheduling:
+- Schedules are created based on child's date of birth
+- Each schedule links to specific vaccine doses and brands
+- Multi-year vaccination plans with automatic date calculations
+- Support for schedule modifications, skipping, and completion tracking
+
+### Inventory Management:
+- Brand Amount tracking per clinic for each vaccine brand
+- Stock management with supplier information and billing
+- Automatic inventory updates when vaccines are administered
+- Low-stock alerts and reorder management
+
+### Multi-Clinic Operations:
+- Doctors can operate multiple clinics across different cities
+- Only one clinic can be "online" (active) per doctor at a time
+- Personal Assistants have granular permissions per clinic
+- Clinic-specific inventory and patient management
+
+### Alert & Notification System:
+- Automated reminders for upcoming vaccinations
+- Multiple communication channels (Email, SMS, WhatsApp)
+- Birthday reminders and follow-up scheduling
+
+## Code Patterns & Conventions
+
+### Controller Structure:
+- Consistent CRUD operations with proper HTTP verbs
+- Proper error handling
+- Async/await pattern for database operations
+
+### Permission & Access Control:
+- Add username and password in each of role or model (Doctor, PA, Patient)
+- Granular PA permissions (AllowStock, AllowAlert, AllowClinic, etc.)
+- Clinic-specific access control for Personal Assistant
+- Doctor ownership validation for clinic operations
+
+### File & Document Management:
+- PDF generation for vaccination certificates and invoices
+- QR code generation for patient identification
+- File upload handling for clinic monograms and documents
+
+## Development Guidelines
+
+### When adding new features:
+1. Add appropriate validation and error handling
+2. Consider multi-clinic and permission implications
+
+### Security considerations:
+- Sanitize file uploads and user inputs
+- Implement proper authentication for all endpoints
+
+This system manages the complete lifecycle of child vaccination from initial registration through multi-year vaccination schedules, with comprehensive inventory management and multi-role access control across multiple clinic locations.

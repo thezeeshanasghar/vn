@@ -200,7 +200,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { name, minAge, maxAge, isInfinite, validity } = req.body;
 
-    const vaccine = await Vaccine.findById(req.params.id);
+    const vaccine = await Vaccine.findOne({ vaccineID: Number(req.params.id) });
     
     if (!vaccine) {
       return res.status(404).json({
@@ -235,7 +235,7 @@ router.put('/:id', async (req, res) => {
 // DELETE vaccine
 router.delete('/:id', async (req, res) => {
   try {
-    const vaccine = await Vaccine.findByIdAndDelete(req.params.id);
+    const vaccine = await Vaccine.findOneAndDelete({ vaccineID: Number(req.params.id) });
     
     if (!vaccine) {
       return res.status(404).json({
