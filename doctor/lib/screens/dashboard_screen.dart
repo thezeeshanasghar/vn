@@ -6,8 +6,9 @@ import 'login_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final List<Clinic>? clinics;
+  final Map<int, int>? patientCounts;
   
-  const DashboardScreen({super.key, this.clinics});
+  const DashboardScreen({super.key, this.clinics, this.patientCounts});
 
   @override
   Widget build(BuildContext context) {
@@ -378,7 +379,7 @@ class DashboardScreen extends StatelessWidget {
               child: _buildStatCard(
                 context,
                 label: 'Total Patients',
-                value: '150',
+                value: '${patientCounts?.values.fold(0, (sum, count) => sum + count) ?? 0}',
                 icon: Icons.group,
                 color: Colors.blue.shade600,
               ),
@@ -387,10 +388,10 @@ class DashboardScreen extends StatelessWidget {
             Expanded(
               child: _buildStatCard(
                 context,
-                label: 'Upcoming Appointments',
-                value: '12',
-                icon: Icons.event,
-                color: Colors.red.shade600,
+                label: 'Active Clinics',
+                value: '${clinics?.where((c) => c.isOnline).length ?? 0}',
+                icon: Icons.local_hospital,
+                color: Colors.green.shade600,
               ),
             ),
           ],

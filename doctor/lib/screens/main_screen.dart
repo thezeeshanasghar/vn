@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/clinic_service.dart';
+import '../services/patient_service.dart';
 import '../models/clinic.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
+import 'patient_list_screen.dart';
 import 'clinic_form_screen.dart';
 import 'clinic_list_screen.dart';
 import '../widgets/sidebar.dart';
@@ -21,6 +23,7 @@ class _MainScreenState extends State<MainScreen> {
   bool _isSidebarExpanded = false;
   List<Clinic> _clinics = [];
   bool _isLoadingClinics = true;
+  Map<int, int> _patientCounts = {};
 
   @override
   void initState() {
@@ -39,9 +42,21 @@ class _MainScreenState extends State<MainScreen> {
       
       if (doctor != null) {
         final clinics = await ClinicService.getClinicsByDoctor(doctor.id);
-        setState(() {
-          _clinics = clinics;
-        });
+        
+        // Load patient counts for each clinic
+        try {
+          final counts = await PatientService.getPatientCountsByClinic(doctor.doctorId);
+          setState(() {
+            _clinics = clinics;
+            _patientCounts = counts;
+          });
+        } catch (e) {
+          // If patient counts fail, still load clinics
+          setState(() {
+            _clinics = clinics;
+            _patientCounts = {};
+          });
+        }
         
         // Auto-set online for single clinic doctors
         if (clinics.isNotEmpty) {
@@ -112,7 +127,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildMainContent() {
     switch (_selectedIndex) {
       case 0:
-        return DashboardScreen(clinics: _clinics);
+        return DashboardScreen(clinics: _clinics, patientCounts: _patientCounts);
       case 1:
         if (_isLoadingClinics) {
           return const Center(child: CircularProgressIndicator());
@@ -121,7 +136,31 @@ class _MainScreenState extends State<MainScreen> {
             ? _buildNoClinicView() 
             : _buildClinicsView();
       case 2:
-        return _buildComingSoonView('Patients Management');
+        final onlineClinic = _clinics.where((c) => c.isOnline).firstOrNull;
+        if (onlineClinic == null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.warning, size: 64, color: Colors.orange.shade600),
+                const SizedBox(height: 16),
+                Text(
+                  'No Active Clinic',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please set a clinic online to manage patients',
+                  style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          );
+        }
+        return PatientListScreen(
+          doctorId: Provider.of<AuthService>(context, listen: false).currentDoctor!.doctorId,
+          clinicId: onlineClinic.clinicId,
+        );
       case 3:
         return _buildComingSoonView('Appointments');
       case 4:
@@ -524,13 +563,34 @@ class _MainScreenState extends State<MainScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            'ID: ${clinic.clinicId} • ${clinic.regNo}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade500,
-                              fontWeight: FontWeight.w400,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                'ID: ${clinic.clinicId} • ${clinic.regNo}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade500,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.blue.shade200),
+                                ),
+                                child: Text(
+                                  '${_patientCounts[clinic.clinicId] ?? 0} patients',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
