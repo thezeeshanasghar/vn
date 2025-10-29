@@ -12,6 +12,7 @@ const brandRoutes = require('./routes/brandRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
 const authRoutes = require('./routes/authRoutes');
 const clinicRoutes = require('./routes/clinicRoutes');
+const patientRoutes = require('./routes/patientRoutes');
 
 // Load environment variables
 require('dotenv').config({ path: './config.env' });
@@ -41,6 +42,7 @@ app.use('/api/brands', brandRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/clinics', clinicRoutes);
+app.use('/api/patients', patientRoutes);
 
 /**
  * @swagger
@@ -88,6 +90,7 @@ app.get('/', (req, res) => {
       doctors: '/api/doctors',
       auth: '/api/auth',
       clinics: '/api/clinics'
+      ,patients: '/api/patients'
     }
   });
 });
@@ -120,4 +123,5 @@ app.listen(PORT, () => {
   console.log(`👨‍⚕️ Doctors API: http://localhost:${PORT}/api/doctors`);
   console.log(`🔐 Auth API: http://localhost:${PORT}/api/auth`);
   console.log(`🏥 Clinics API: http://localhost:${PORT}/api/clinics`);
+  console.log(`🧑‍🤝‍🧑 Patients API: http://localhost:${PORT}/api/patients`);
 });
