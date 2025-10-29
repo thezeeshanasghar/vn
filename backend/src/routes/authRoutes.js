@@ -68,12 +68,21 @@ const jwt = require('jsonwebtoken');
  */
 router.post('/login', async (req, res) => {
   const { identifier, password } = req.body;
+  
+  console.log('Login attempt:', { identifier, password });
 
   try {
     // Find doctor by email or mobile number
     const doctor = await Doctor.findOne({
       $or: [{ email: identifier }, { mobileNumber: identifier }]
     });
+    
+    console.log('Found doctor:', doctor ? 'Yes' : 'No');
+    if (doctor) {
+      console.log('Doctor password:', doctor.password);
+      console.log('Provided password:', password);
+      console.log('Password match:', doctor.password === password);
+    }
 
     if (!doctor) {
       return res.status(400).json({ success: false, message: 'Invalid credentials' });

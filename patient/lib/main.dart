@@ -10,6 +10,7 @@ class PatientPanelApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Patient Panel',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
@@ -121,7 +122,7 @@ class WelcomePage extends StatelessWidget {
                 const SizedBox(height: 40),
                 
                 // Get Started Button
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
