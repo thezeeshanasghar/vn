@@ -3,8 +3,10 @@ import 'package:get/get.dart';
 import 'core/router/app_pages.dart';
 import 'core/router/app_routes.dart';
 import 'core/constants/app_colors.dart';
+import 'core/controllers/auth_controller.dart';
 
 void main() {
+  Get.put(AuthController(), permanent: true);
   runApp(const DoctorPortalApp());
 }
 
@@ -19,6 +21,12 @@ class DoctorPortalApp extends StatelessWidget {
       theme: _buildTheme(),
       initialRoute: AppRoutes.login,
       getPages: AppPages.routes,
+      // Ensure global controllers are available everywhere
+      initialBinding: BindingsBuilder(() {
+        if (!Get.isRegistered<AuthController>()) {
+          Get.put(AuthController(), permanent: true);
+        }
+      }),
       defaultTransition: Transition.cupertino,
       transitionDuration: const Duration(milliseconds: 300),
     );

@@ -14,15 +14,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.login,
       page: () => const LoginScreen(),
-      binding: BindingsBuilder(() {
-        Get.put(AuthController());
-      }),
     ),
     GetPage(
       name: AppRoutes.main,
       page: () => const MainScreen(),
       binding: BindingsBuilder(() {
-        Get.put(AuthController());
         Get.put(ClinicController());
       }),
     ),
@@ -30,7 +26,6 @@ class AppPages {
       name: AppRoutes.dashboard,
       page: () => const DashboardScreen(),
       binding: BindingsBuilder(() {
-        Get.put(AuthController());
         Get.put(ClinicController());
       }),
     ),

@@ -1,12 +1,22 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 class ApiConfig {
-  static const String baseUrl = 'http://localhost:3000/api';
+  // Use correct loopback depending on platform (Android emulator cannot reach host via localhost)
+  static String get _hostBase {
+    if (kIsWeb) return 'http://localhost:3000';
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000'; // Android emulator
+    return 'http://localhost:3000'; // iOS simulator/macOS
+  }
+
+  static String get baseUrl => '$_hostBase/api';
   
   // Auth endpoints
-  static const String loginEndpoint = '$baseUrl/auth/login';
-  static const String verifyEndpoint = '$baseUrl/auth/verify';
+  static String get loginEndpoint => '$baseUrl/auth/login';
+  static String get verifyEndpoint => '$baseUrl/auth/verify';
   
   // Clinic endpoints
-  static const String clinicsEndpoint = '$baseUrl/clinics';
+  static String get clinicsEndpoint => '$baseUrl/clinics';
   static String getClinicsByDoctor(String doctorId) => '$baseUrl/clinics/doctor-mongo/$doctorId';
   static String getClinicById(String clinicId) => '$baseUrl/clinics/$clinicId';
   static String updateClinic(String clinicId) => '$baseUrl/clinics/$clinicId';

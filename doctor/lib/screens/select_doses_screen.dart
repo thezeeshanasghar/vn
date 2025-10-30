@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
+
 import '../models/dose.dart';
 import '../services/dose_service.dart';
 import '../services/doctor_schedule_service.dart';
-import '../services/auth_service.dart';
+import '../core/controllers/auth_controller.dart';
 
 class SelectDosesScreen extends StatefulWidget {
   const SelectDosesScreen({super.key});
@@ -29,8 +30,8 @@ class _SelectDosesScreenState extends State<SelectDosesScreen> {
   Future<void> _loadData() async {
     setState(() => _loading = true);
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final doctor = authService.currentDoctor;
+      final AuthController authController = Get.find<AuthController>();
+      final doctor = authController.currentDoctor.value;
       
       if (doctor == null) {
         throw Exception('Doctor not logged in');
@@ -88,8 +89,8 @@ class _SelectDosesScreenState extends State<SelectDosesScreen> {
 
     setState(() => _saving = true);
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final doctor = authService.currentDoctor;
+      final AuthController authController = Get.find<AuthController>();
+      final doctor = authController.currentDoctor.value;
 
       if (doctor == null) {
         throw Exception('Doctor not logged in');

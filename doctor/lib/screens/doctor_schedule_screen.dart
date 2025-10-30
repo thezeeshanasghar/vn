@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
+
 import 'select_doses_screen.dart';
 import '../models/doctor_schedule.dart';
 import '../services/doctor_schedule_service.dart';
-import '../services/auth_service.dart';
+import '../core/controllers/auth_controller.dart';
 import '../utils/plan_date_options.dart';
 
 class DoctorScheduleScreen extends StatefulWidget {
@@ -26,8 +27,8 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
   Future<void> _loadSchedules() async {
     setState(() => _loading = true);
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final doctor = authService.currentDoctor;
+      final AuthController authController = Get.find<AuthController>();
+      final doctor = authController.currentDoctor.value;
 
       if (doctor != null) {
         final schedules = await DoctorScheduleService.getSchedulesByDoctor(doctor.doctorId);

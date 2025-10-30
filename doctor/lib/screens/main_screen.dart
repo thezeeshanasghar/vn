@@ -12,6 +12,7 @@ import '../core/widgets/app_button.dart';
 import '../core/router/app_routes.dart';
 import 'dashboard_screen.dart';
 import 'coming_soon_screen.dart';
+import '../widgets/sidebar.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -243,6 +244,17 @@ class _MainScreenState extends State<MainScreen> {
           userName: _authController.currentDoctor.value?.lastName,
           userRole: _authController.currentDoctor.value?.type,
           onLogout: () => _authController.logout(),
+        ),
+        drawer: Drawer(
+          child: SafeArea(
+                child: Sidebar(
+                  selectedIndex: _selectedIndex,
+              onItemSelected: (index) {
+                setState(() => _selectedIndex = index);
+                Navigator.of(context).pop();
+              },
+            ),
+          ),
         ),
         body: _buildMainContent(),
       );

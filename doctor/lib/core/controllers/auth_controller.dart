@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../models/doctor.dart';
 import '../services/auth_service.dart';
+import '../router/app_routes.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = AuthService();
@@ -51,6 +52,10 @@ class AuthController extends GetxController {
         await prefs.setString('token', token.value);
         await prefs.setString('doctor', json.encode(currentDoctor.value!.toJson()));
         
+        // Ensure navigation happens after a successful login
+        if (Get.currentRoute != AppRoutes.main) {
+          Get.offAllNamed(AppRoutes.main);
+        }
         return true;
       } else {
         Get.snackbar(
