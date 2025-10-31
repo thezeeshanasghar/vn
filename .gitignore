@@ -202,3 +202,4 @@ Thumbs.db
 pubspec.lock.md
 .flutter-devtools
 
+backend/config.env
