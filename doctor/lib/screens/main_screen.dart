@@ -12,6 +12,8 @@ import '../core/widgets/app_button.dart';
 import '../core/router/app_routes.dart';
 import 'dashboard_screen.dart';
 import 'coming_soon_screen.dart';
+import 'doctor_schedule_screen.dart';
+import 'patient_list_screen.dart';
 import '../widgets/sidebar.dart';
 
 class MainScreen extends StatefulWidget {
@@ -59,14 +61,28 @@ class _MainScreenState extends State<MainScreen> {
       case 1:
         return _buildClinicsView();
       case 2:
-        return const ComingSoonScreen(title: 'Patients Management');
+        // Patients: require one clinic to be online
+        final onlineClinics = _clinicController.clinics.where((c) => c.isOnline).toList();
+        if (onlineClinics.isEmpty) {
+          return const ComingSoonScreen(title: 'Set a clinic Online to manage Patients');
+        }
+        final doctor = _authController.currentDoctor.value;
+        if (doctor == null) {
+          return const ComingSoonScreen(title: 'Please login again');
+        }
+        return PatientListScreen(
+          doctorId: doctor.doctorId,
+          clinicId: onlineClinics.first.clinicId,
+        );
       case 3:
-        return const ComingSoonScreen(title: 'Appointments');
+        return const DoctorScheduleScreen();
       case 4:
-        return const ComingSoonScreen(title: 'Medical Records');
+        return const ComingSoonScreen(title: 'Appointments');
       case 5:
-        return const ComingSoonScreen(title: 'Settings');
+        return const ComingSoonScreen(title: 'Medical Records');
       case 6:
+        return const ComingSoonScreen(title: 'Settings');
+      case 7:
         return const ComingSoonScreen(title: 'Help & Support');
       default:
         return DashboardScreen(clinics: _clinicController.clinics);
@@ -266,10 +282,11 @@ class _MainScreenState extends State<MainScreen> {
       case 0: return 'Dashboard';
       case 1: return 'My Clinic';
       case 2: return 'Patients';
-      case 3: return 'Appointments';
-      case 4: return 'Medical Records';
-      case 5: return 'Settings';
-      case 6: return 'Help & Support';
+      case 3: return 'Doctor Schedule';
+      case 4: return 'Appointments';
+      case 5: return 'Medical Records';
+      case 6: return 'Settings';
+      case 7: return 'Help & Support';
       default: return 'Dashboard';
     }
   }

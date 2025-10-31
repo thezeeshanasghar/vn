@@ -17,6 +17,11 @@ router.get('/', async (req, res) => {
     const patients = await Patient.find(query).sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: patients.length, data: patients });
   } catch (err) {
+    if (err && err.code === 11000) {
+      const field = Object.keys(err.keyPattern || {})[0] || 'value';
+      const friendly = field === 'mobileNumber' ? 'Mobile number' : field.toUpperCase();
+      return res.status(400).json({ success: false, message: `${friendly} already exists` });
+    }
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -41,6 +46,11 @@ router.get('/counts', async (req, res) => {
     
     res.status(200).json({ success: true, data: result });
   } catch (err) {
+    if (err && err.code === 11000) {
+      const field = Object.keys(err.keyPattern || {})[0] || 'value';
+      const friendly = field === 'mobileNumber' ? 'Mobile number' : field.toUpperCase();
+      return res.status(400).json({ success: false, message: `${friendly} already exists` });
+    }
     res.status(500).json({ success: false, message: err.message });
   }
 });

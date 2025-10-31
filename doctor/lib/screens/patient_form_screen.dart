@@ -108,20 +108,20 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
       if (widget.existing == null) {
         await PatientService.createPatient(patient);
         if (mounted) {
-          _showSuccessDialog(
+          await _showAutoSuccess(
             'Patient Added Successfully!',
             '${patient.name} has been added to your patient list.',
-            () => Navigator.of(context).pop(true),
           );
+          if (mounted) Navigator.of(context).pop(true);
         }
       } else {
         await PatientService.updatePatient(widget.existing!.patientId!, patient);
         if (mounted) {
-          _showSuccessDialog(
+          await _showAutoSuccess(
             'Patient Updated Successfully!',
             '${patient.name}\'s information has been updated.',
-            () => Navigator.of(context).pop(true),
           );
+          if (mounted) Navigator.of(context).pop(true);
         }
       }
     } catch (e) {
@@ -176,6 +176,41 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _showAutoSuccess(String title, String message) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.check_circle, color: Colors.green.shade600, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+        ),
+      ),
+    );
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (mounted) Navigator.of(context).pop();
   }
 
   void _showErrorDialog(String title, String message) {

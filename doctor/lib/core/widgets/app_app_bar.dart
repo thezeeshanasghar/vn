@@ -86,63 +86,50 @@ class AppAppBarWithUser extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: AppColors.primary,
       foregroundColor: AppColors.white,
       elevation: 0,
+      automaticallyImplyLeading: true,
+      actions: [
+        if (userName != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: PopupMenuButton<String>(
+              tooltip: 'Account',
+              onSelected: (v) {
+                if (v == 'logout' && onLogout != null) onLogout!();
+              },
+              itemBuilder: (context) => [
+                if (userRole != null)
+                  PopupMenuItem<String>(
+                    enabled: false,
+                    value: 'role',
+                    child: Text(userRole!),
+                  ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Text('Logout'),
+                ),
+              ],
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.white.withOpacity(0.2),
+                child: Text(
+                  (userName!.isNotEmpty ? userName![0] : '?').toUpperCase(),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (actions != null) ...actions!,
+      ],
       flexibleSpace: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [AppColors.primary, AppColors.primaryDark],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                if (userName != null) ...[
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: AppColors.white.withOpacity(0.2),
-                    child: Text(
-                      userName![0].toUpperCase(),
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Dr. $userName',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      if (userRole != null)
-                        Text(
-                          userRole!,
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.white.withOpacity(0.8),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const Spacer(),
-                ],
-                if (onLogout != null)
-                  IconButton(
-                    icon: const Icon(Icons.logout),
-                    onPressed: onLogout,
-                    color: AppColors.white,
-                  ),
-                if (actions != null) ...actions!,
-              ],
-            ),
           ),
         ),
       ),
