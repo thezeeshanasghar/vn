@@ -1,0 +1,112 @@
+name: Build Flutter APK Artifacts
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-apks:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checkout code from repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Setup Flutter 3.35.7 (stable) for all apps
+      - name: Setup Flutter (3.35.7)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.7'
+          channel: 'stable'
+          cache: true
+
+      # Verify Flutter installation and display version info
+      - name: Verify Flutter installation
+        run: |
+          flutter --version
+          flutter doctor -v
+
+      # Ensure Android platform exists for admin app (idempotent)
+      - name: Ensure Android platform for admin app
+        working-directory: ./admin
+        run: |
+          flutter create --platforms=android .
+
+      # Ensure Android platform exists for doctor app (idempotent)
+      - name: Ensure Android platform for doctor app
+        working-directory: ./doctor
+        run: |
+          flutter create --platforms=android .
+
+      # Ensure compileSdk is 34 for admin/doctor (Groovy) and patient (Kotlin DSL)
+      - name: Set compileSdkVersion to 34 for all apps
+        run: |
+          # admin (Groovy)
+          if [ -f admin/android/app/build.gradle ]; then
+            sed -i 's/compileSdkVersion [0-9]\+/compileSdkVersion 34/' admin/android/app/build.gradle || true
+          fi
+          # doctor (Groovy)
+          if [ -f doctor/android/app/build.gradle ]; then
+            sed -i 's/compileSdkVersion [0-9]\+/compileSdkVersion 34/' doctor/android/app/build.gradle || true
+          fi
+          # patient (Kotlin DSL)
+          if [ -f patient/android/app/build.gradle.kts ]; then
+            sed -i 's/compileSdk *= *[0-9]\+/compileSdk = 34/' patient/android/app/build.gradle.kts || true
+          fi
+
+      # Install dependencies for admin app
+      - name: Install admin app dependencies
+        working-directory: ./admin
+        run: |
+          flutter pub get
+
+      # Install dependencies for doctor app
+      - name: Install doctor app dependencies
+        working-directory: ./doctor
+        run: |
+          flutter pub get
+
+      # Install dependencies for patient app
+      - name: Install patient app dependencies
+        working-directory: ./patient
+        run: |
+          flutter pub get
+
+      # Build unsigned release APK for admin app
+      - name: Build admin release APK
+        working-directory: ./admin
+        run: |
+          flutter build apk --release
+
+      # Build unsigned release APK for doctor app
+      - name: Build doctor release APK
+        working-directory: ./doctor
+        run: |
+          flutter build apk --release
+
+      # Build unsigned release APK for patient app
+      - name: Build patient release APK
+        working-directory: ./patient
+        run: |
+          flutter build apk --release
+
+      # Package all APKs into build_outputs folder
+      - name: Package APK artifacts
+        run: |
+          mkdir -p build_outputs
+          cp admin/build/app/outputs/flutter-apk/app-release.apk build_outputs/admin_release.apk
+          cp doctor/build/app/outputs/flutter-apk/app-release.apk build_outputs/doctor_release.apk
+          cp patient/build/app/outputs/flutter-apk/app-release.apk build_outputs/patient_release.apk
+          ls -lh build_outputs/
+
+      # Upload all APKs as a single artifact named release-apks
+      - name: Upload release APKs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apks
+          path: build_outputs/
+          retention-days: 30
+
