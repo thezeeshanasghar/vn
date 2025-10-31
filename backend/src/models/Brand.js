@@ -10,6 +10,11 @@ const brandSchema = new mongoose.Schema({
     required: true,
     trim: true,
     unique: true
+  },
+  amount: {
+    type: Number,
+    required: true,
+    default: 0
   }
 }, {
   timestamps: true

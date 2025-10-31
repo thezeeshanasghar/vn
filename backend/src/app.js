@@ -15,6 +15,8 @@ const authRoutes = require('./routes/authRoutes');
 const clinicRoutes = require('./routes/clinicRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const doctorScheduleRoutes = require('./routes/doctorScheduleRoutes');
+const supplierRoutes = require('./routes/supplierRoutes');
+const billRoutes = require('./routes/billRoutes');
 
 // Load environment variables
 require('dotenv').config({ path: path.join(__dirname, '..', 'config.env') });
@@ -73,6 +75,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/clinics', clinicRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/doctor-schedules', doctorScheduleRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/bills', billRoutes);
 
 /**
  * @swagger
@@ -156,4 +160,6 @@ app.listen(PORT, () => {
   console.log(`🏥 Clinics API: http://localhost:${PORT}/api/clinics`);
   console.log(`🧑‍🤝‍🧑 Patients API: http://localhost:${PORT}/api/patients`);
   console.log(`📅 Doctor Schedules API: http://localhost:${PORT}/api/doctor-schedules`);
+  console.log(`📦 Suppliers API: http://localhost:${PORT}/api/suppliers`);
+  console.log(`🧾 Bills API: http://localhost:${PORT}/api/bills`);
 });

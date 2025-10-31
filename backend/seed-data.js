@@ -10,13 +10,28 @@ db.clinics.deleteMany({});
 
 print('🌱 Starting database seeding...');
 
-// Seed Brands
+// Seed Brands (20) with PKR amounts
 const brands = [
-  { brandId: 1, name: "Pfizer" },
-  { brandId: 2, name: "Moderna" },
-  { brandId: 3, name: "Johnson & Johnson" },
-  { brandId: 4, name: "AstraZeneca" },
-  { brandId: 5, name: "Novavax" }
+  { brandId: 1, name: "Pfizer", amount: 1800 },
+  { brandId: 2, name: "Moderna", amount: 1750 },
+  { brandId: 3, name: "Johnson & Johnson", amount: 1600 },
+  { brandId: 4, name: "AstraZeneca", amount: 1500 },
+  { brandId: 5, name: "Novavax", amount: 1550 },
+  { brandId: 6, name: "Sinopharm", amount: 1200 },
+  { brandId: 7, name: "Sinovac", amount: 1150 },
+  { brandId: 8, name: "Sputnik V", amount: 1400 },
+  { brandId: 9, name: "GSK", amount: 2100 },
+  { brandId: 10, name: "Sanofi", amount: 2000 },
+  { brandId: 11, name: "Merck", amount: 2200 },
+  { brandId: 12, name: "Bayer", amount: 1900 },
+  { brandId: 13, name: "Roche", amount: 2300 },
+  { brandId: 14, name: "Abbott", amount: 1700 },
+  { brandId: 15, name: "Takeda", amount: 1850 },
+  { brandId: 16, name: "CSL Seqirus", amount: 1950 },
+  { brandId: 17, name: "BioNTech", amount: 2400 },
+  { brandId: 18, name: "Serum Institute", amount: 1300 },
+  { brandId: 19, name: "Hikma", amount: 1450 },
+  { brandId: 20, name: "Searle", amount: 1100 }
 ];
 
 db.brands.insertMany(brands);

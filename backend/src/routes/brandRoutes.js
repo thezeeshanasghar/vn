@@ -23,6 +23,10 @@ const Brand = require('../models/Brand');
  *           type: string
  *           description: Brand name
  *           example: Pfizer
+ *         amount:
+ *           type: number
+ *           description: Price in PKR
+ *           example: 1500
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -116,11 +120,16 @@ router.get('/:id', async (req, res) => {
  *             type: object
  *             required:
  *               - name
+ *               - amount
  *             properties:
  *               name:
  *                 type: string
  *                 description: Brand name
  *                 example: Pfizer
+ *               amount:
+ *                 type: number
+ *                 description: Price in PKR
+ *                 example: 1500
  *     responses:
  *       201:
  *         description: Brand created successfully
@@ -146,18 +155,19 @@ router.get('/:id', async (req, res) => {
 // POST create new brand
 router.post('/', async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, amount } = req.body;
 
     // Validate required fields
-    if (!name) {
+    if (!name || amount === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide brand name'
+        message: 'Please provide brand name and amount'
       });
     }
 
     const brand = new Brand({
-      name: name.trim()
+      name: name.trim(),
+      amount: Number(amount)
     });
 
     const savedBrand = await brand.save();
@@ -218,7 +228,7 @@ router.post('/', async (req, res) => {
 // PUT update brand
 router.put('/:id', async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, amount } = req.body;
 
     const brand = await Brand.findById(req.params.id);
 
@@ -231,6 +241,7 @@ router.put('/:id', async (req, res) => {
 
     // Update fields if provided
     if (name !== undefined) brand.name = name.trim();
+    if (amount !== undefined) brand.amount = Number(amount);
 
     const updatedBrand = await brand.save();
 
@@ -303,3 +314,57 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
+ 
+/**
+ * Development helpers
+ * These endpoints help you finish local migration/seeding without installing mongosh.
+ * Remove or protect in production.
+ */
+ 
+// GET /api/brands/dev/migrate-amounts -> set amount=0 where missing
+router.get('/dev/migrate-amounts', async (req, res) => {
+  try {
+    const result = await Brand.updateMany({ amount: { $exists: false } }, { $set: { amount: 0 } });
+    res.status(200).json({ success: true, message: 'Amounts migrated', matched: result.matchedCount, modified: result.modifiedCount });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Migration failed', error: error.message });
+  }
+});
+
+// GET /api/brands/dev/seed-dummy -> insert 20 dummy brands with amounts (skips existing by name)
+router.get('/dev/seed-dummy', async (req, res) => {
+  try {
+    const items = [
+      { name: 'Pfizer', amount: 1800 },
+      { name: 'Moderna', amount: 1750 },
+      { name: 'Johnson & Johnson', amount: 1600 },
+      { name: 'AstraZeneca', amount: 1500 },
+      { name: 'Novavax', amount: 1550 },
+      { name: 'Sinopharm', amount: 1200 },
+      { name: 'Sinovac', amount: 1150 },
+      { name: 'Sputnik V', amount: 1400 },
+      { name: 'GSK', amount: 2100 },
+      { name: 'Sanofi', amount: 2000 },
+      { name: 'Merck', amount: 2200 },
+      { name: 'Bayer', amount: 1900 },
+      { name: 'Roche', amount: 2300 },
+      { name: 'Abbott', amount: 1700 },
+      { name: 'Takeda', amount: 1850 },
+      { name: 'CSL Seqirus', amount: 1950 },
+      { name: 'BioNTech', amount: 2400 },
+      { name: 'Serum Institute', amount: 1300 },
+      { name: 'Hikma', amount: 1450 },
+      { name: 'Searle', amount: 1100 },
+    ];
+    let created = 0; let skipped = 0;
+    for (const it of items) {
+      const exists = await Brand.findOne({ name: it.name });
+      if (exists) { skipped++; continue; }
+      const b = new Brand({ name: it.name, amount: it.amount });
+      try { await b.save(); created++; } catch (_) { skipped++; }
+    }
+    res.status(200).json({ success: true, message: 'Seed completed', created, skipped });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Seed failed', error: error.message });
+  }
+});
