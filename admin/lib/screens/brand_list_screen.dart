@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../core/services/api_service.dart';
 import '../models/brand.dart';
-import '../services/api_service.dart';
+import '../core/constants/app_colors.dart';
+
 import 'brand_form_screen.dart';
 
 class BrandListScreen extends StatefulWidget {
@@ -47,9 +49,9 @@ class _BrandListScreenState extends State<BrandListScreen> {
       await ApiService.deleteBrand(id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Brand deleted successfully'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Brand deleted successfully'),
+            backgroundColor: AppColors.secondary,
           ),
         );
       }
@@ -59,7 +61,7 @@ class _BrandListScreenState extends State<BrandListScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting brand: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -87,7 +89,7 @@ class _BrandListScreenState extends State<BrandListScreen> {
                   _deleteBrand(brand.id!);
                 }
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              child: Text('Delete', style: TextStyle(color: AppColors.primary)),
             ),
           ],
         );
@@ -100,8 +102,8 @@ class _BrandListScreenState extends State<BrandListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Brand Management'),
-        backgroundColor: Colors.purple[600],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -110,32 +112,40 @@ class _BrandListScreenState extends State<BrandListScreen> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+              ),
+            )
           : errorMessage != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                      Icon(Icons.error_outline, color: AppColors.primary, size: 40),
                       const SizedBox(height: 10),
                       Text(
                         errorMessage!,
-                        style: const TextStyle(color: Colors.red, fontSize: 16),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 16),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 10),
                       ElevatedButton(
                         onPressed: _loadBrands,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                        ),
                         child: const Text('Retry'),
                       ),
                     ],
                   ),
                 )
               : brands.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
                         'No brands added yet. Click the + button to add one!',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                        style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
                         textAlign: TextAlign.center,
                       ),
                     )
@@ -148,34 +158,39 @@ class _BrandListScreenState extends State<BrandListScreen> {
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
                             elevation: 4,
+                            color: AppColors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: ListTile(
                               contentPadding: const EdgeInsets.all(16),
                               leading: CircleAvatar(
-                                backgroundColor: Colors.purple[100],
+                                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                                 child: Icon(
                                   Icons.business,
-                                  color: Colors.purple[600],
+                                  color: AppColors.primary,
                                 ),
                               ),
                               title: Text(
                                 brand.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
-                                  Text('Brand ID: ${brand.brandId}'),
+                                  Text(
+                                    'Brand ID: ${brand.brandId}',
+                                    style: TextStyle(color: AppColors.textSecondary),
+                                  ),
                                   if (brand.createdAt != null)
                                     Text(
                                       'Created: ${_formatDate(brand.createdAt!)}',
-                                      style: const TextStyle(fontSize: 12),
+                                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                                     ),
                                 ],
                               ),
@@ -195,23 +210,23 @@ class _BrandListScreenState extends State<BrandListScreen> {
                                   }
                                 },
                                 itemBuilder: (context) => [
-                                  const PopupMenuItem(
+                                  PopupMenuItem(
                                     value: 'edit',
                                     child: Row(
                                       children: [
-                                        Icon(Icons.edit, color: Colors.blue),
-                                        SizedBox(width: 8),
-                                        Text('Edit'),
+                                        Icon(Icons.edit, color: AppColors.primary),
+                                        const SizedBox(width: 8),
+                                        Text('Edit', style: TextStyle(color: AppColors.textPrimary)),
                                       ],
                                     ),
                                   ),
-                                  const PopupMenuItem(
+                                  PopupMenuItem(
                                     value: 'delete',
                                     child: Row(
                                       children: [
-                                        Icon(Icons.delete, color: Colors.red),
-                                        SizedBox(width: 8),
-                                        Text('Delete'),
+                                        Icon(Icons.delete, color: AppColors.primary),
+                                        const SizedBox(width: 8),
+                                        Text('Delete', style: TextStyle(color: AppColors.textPrimary)),
                                       ],
                                     ),
                                   ),
@@ -229,8 +244,8 @@ class _BrandListScreenState extends State<BrandListScreen> {
             MaterialPageRoute(builder: (context) => const BrandFormScreen()),
           ).then((_) => _loadBrands());
         },
-        backgroundColor: Colors.purple[600],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
         child: const Icon(Icons.add),
       ),
     );

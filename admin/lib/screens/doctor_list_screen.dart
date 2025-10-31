@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import '../core/services/api_service.dart';
 import '../models/doctor.dart';
-import '../services/api_service.dart';
+import '../core/constants/app_colors.dart';
+
 import 'doctor_form_screen.dart';
 
 class DoctorListScreen extends StatefulWidget {
@@ -48,9 +50,9 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
       await ApiService.deleteDoctor(id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Doctor deleted successfully'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Doctor deleted successfully'),
+            backgroundColor: AppColors.secondary,
           ),
         );
       }
@@ -60,7 +62,7 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting doctor: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -88,7 +90,7 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
                   _deleteDoctor(doctor.id!);
                 }
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              child: Text('Delete', style: TextStyle(color: AppColors.primary)),
             ),
           ],
         );
@@ -145,8 +147,8 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
     // Default avatar with icon
     return CircleAvatar(
       radius: 25,
-      backgroundColor: Colors.blue[100],
-      child: Icon(Icons.person, color: Colors.blue[600], size: 30),
+      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+      child: Icon(Icons.person, color: AppColors.primary, size: 30),
     );
   }
 
@@ -154,34 +156,56 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: AppColors.shadow.withValues(alpha: 0.05),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
           ),
         ],
       ),
       child: Card(
         elevation: 0,
+        color: AppColors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           onTap: () => _showDoctorDetails(doctor),
+          splashColor: AppColors.primary.withValues(alpha: 0.1),
+          highlightColor: AppColors.primary.withValues(alpha: 0.05),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Row
                 Row(
                   children: [
-                    // Avatar
-                    _buildDoctorAvatar(doctor),
-                    const SizedBox(width: 16),
+                    // Avatar with enhanced styling
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: _buildDoctorAvatar(doctor),
+                    ),
+                    const SizedBox(width: 20),
                     // Doctor Info
                     Expanded(
                       child: Column(
@@ -189,27 +213,31 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
                         children: [
                           Text(
                             'Dr. ${doctor.fullName}',
-                            style: const TextStyle(
-                              fontSize: 20,
+                            style: TextStyle(
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: AppColors.textPrimary,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                           if (doctor.type != null && doctor.type!.isNotEmpty)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.blue[200]!),
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
                               ),
                               child: Text(
                                 doctor.type!,
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.blue[700],
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ),
@@ -218,10 +246,19 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
                     ),
                     // Status Badge
                     _buildStatusBadge(doctor.isActive),
-                    const SizedBox(width: 8),
-                    // Menu Button
-                    PopupMenuButton<String>(
-                      onSelected: (value) {
+                    const SizedBox(width: 12),
+                    // Menu Button with enhanced styling
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.border.withValues(alpha: 0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: PopupMenuButton<String>(
+                        onSelected: (value) {
                         if (value == 'view') {
                           _showDoctorDetails(doctor);
                         } else if (value == 'edit') {
@@ -238,85 +275,119 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
                         }
                       },
                       itemBuilder: (context) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'view',
                           child: Row(
                             children: [
-                              Icon(Icons.visibility, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Text('View Details'),
+                              Icon(Icons.visibility, color: AppColors.primary),
+                              const SizedBox(width: 8),
+                              Text('View Details', style: TextStyle(color: AppColors.textPrimary)),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'edit',
                           child: Row(
                             children: [
-                              Icon(Icons.edit, color: Colors.orange),
-                              SizedBox(width: 8),
-                              Text('Edit'),
+                              Icon(Icons.edit, color: AppColors.primary),
+                              const SizedBox(width: 8),
+                              Text('Edit', style: TextStyle(color: AppColors.textPrimary)),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
                           child: Row(
                             children: [
-                              Icon(Icons.delete, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('Delete'),
+                              Icon(Icons.delete, color: AppColors.primary),
+                              const SizedBox(width: 8),
+                              Text('Delete', style: TextStyle(color: AppColors.textPrimary)),
                             ],
                           ),
                         ),
                       ],
                     ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                // Contact Information
+                const SizedBox(height: 20),
+                // Contact Information with enhanced styling
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.background,
+                        AppColors.background.withValues(alpha: 0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
                   child: Column(
                     children: [
                       _buildInfoRow(Icons.email, 'Email', doctor.email),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       _buildInfoRow(Icons.phone, 'Mobile', doctor.mobileNumber),
                       if (doctor.pmdc != null && doctor.pmdc!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                         _buildInfoRow(Icons.badge, 'PMDC', doctor.pmdc!),
                       ],
                       if (doctor.qualifications != null && doctor.qualifications!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                         _buildInfoRow(Icons.school, 'Qualifications', doctor.qualifications!),
                       ],
                     ],
                   ),
                 ),
                 if (doctor.additionalInfo != null && doctor.additionalInfo!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.blue[25],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue[100]!),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.primary.withValues(alpha: 0.05),
+                          AppColors.primary.withValues(alpha: 0.02),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.info_outline, color: Colors.blue[600], size: 16),
-                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.info_outline,
+                            color: AppColors.primary,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             doctor.additionalInfo!,
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.blue[800],
+                              color: AppColors.textPrimary,
                               fontStyle: FontStyle.italic,
+                              height: 1.4,
                             ),
                           ),
                         ),
@@ -336,10 +407,10 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isActive ? Colors.green[100] : Colors.red[100],
+        color: isActive ? AppColors.secondary.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isActive ? Colors.green[300]! : Colors.red[300]!,
+          color: isActive ? AppColors.secondary : AppColors.primary,
           width: 1,
         ),
       ),
@@ -350,7 +421,7 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: isActive ? Colors.green[600] : Colors.red[600],
+              color: isActive ? AppColors.secondary : AppColors.primary,
               shape: BoxShape.circle,
             ),
           ),
@@ -360,7 +431,7 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: isActive ? Colors.green[700] : Colors.red[700],
+              color: isActive ? AppColors.secondary : AppColors.primary,
             ),
           ),
         ],
@@ -371,22 +442,22 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
+        Icon(icon, size: 16, color: AppColors.textSecondary),
         const SizedBox(width: 8),
         Text(
           '$label: ',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
+            color: AppColors.textSecondary,
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
@@ -550,29 +621,30 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: AppColors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.people, size: 20),
+              child: const Icon(Icons.medical_services, size: 20),
             ),
             const SizedBox(width: 12),
             const Text('Doctors Management'),
           ],
         ),
-        backgroundColor: Colors.blue[600],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
         elevation: 0,
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: AppColors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: IconButton(
@@ -583,46 +655,178 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 40),
-                      const SizedBox(height: 10),
-                      Text(
-                        errorMessage!,
-                        style: const TextStyle(color: Colors.red, fontSize: 16),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: _loadDoctors,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : doctors.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No doctors added yet. Click the + button to add one!',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: ListView.builder(
-                        itemCount: doctors.length,
-                        itemBuilder: (context, index) {
-                          final doctor = doctors[index];
-                          return _buildDoctorCard(doctor);
-                        },
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.primary.withValues(alpha: 0.05),
+              AppColors.white,
+            ],
+            stops: const [0.0, 0.3],
+          ),
+        ),
+        child: isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: AppColors.primary,
+                      strokeWidth: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Loading doctors...',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 16,
                       ),
                     ),
+                  ],
+                ),
+              )
+            : errorMessage != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Error loading doctors',
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            errorMessage!,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _loadDoctors,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : doctors.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.medical_services_outlined,
+                                  size: 48,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Text(
+                                'No doctors found',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Add your first doctor to get started',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const DoctorFormScreen(),
+                                    ),
+                                  ).then((_) => _loadDoctors());
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add Doctor'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadDoctors,
+                        color: AppColors.primary,
+                        child: CustomScrollView(
+                          slivers: [
+                            SliverPadding(
+                              padding: const EdgeInsets.all(16),
+                              sliver: SliverList(
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    final doctor = doctors[index];
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 16),
+                                      child: _buildDoctorCard(doctor),
+                                    );
+                                  },
+                                  childCount: doctors.length,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -630,8 +834,8 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
             MaterialPageRoute(builder: (context) => const DoctorFormScreen()),
           ).then((_) => _loadDoctors());
         },
-        backgroundColor: Colors.blue[600],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.white,
         icon: const Icon(Icons.person_add),
         label: const Text('Add Doctor'),
         elevation: 4,

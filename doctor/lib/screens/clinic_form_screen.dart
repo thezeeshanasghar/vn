@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
+import '../core/constants/app_colors.dart';
+import '../core/controllers/auth_controller.dart';
+import '../core/controllers/clinic_controller.dart';
+import '../core/widgets/app_app_bar.dart';
+import '../core/widgets/app_card.dart';
+import '../core/widgets/app_text_field.dart';
+import '../core/widgets/app_button.dart';
 import '../models/clinic.dart';
-import '../services/clinic_service.dart';
-import '../services/auth_service.dart';
 
 class ClinicFormScreen extends StatefulWidget {
   final Clinic? clinic;
   final bool isEditMode;
 
   const ClinicFormScreen({
-    Key? key,
+    super.key,
     this.clinic,
     this.isEditMode = false,
-  }) : super(key: key);
+  });
 
   @override
   State<ClinicFormScreen> createState() => _ClinicFormScreenState();
@@ -27,7 +32,8 @@ class _ClinicFormScreenState extends State<ClinicFormScreen> {
   final _feeController = TextEditingController();
   final _logoController = TextEditingController();
 
-  bool _isLoading = false;
+  final AuthController _authController = Get.find<AuthController>();
+  final ClinicController _clinicController = Get.find<ClinicController>();
 
   @override
   void initState() {
@@ -56,113 +62,64 @@ class _ClinicFormScreenState extends State<ClinicFormScreen> {
   Future<void> _saveClinic() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final doctor = authService.currentDoctor;
-      
-      if (doctor == null) {
-        _showErrorSnackBar('Doctor not found. Please login again.');
-        return;
-      }
-
-      final clinic = Clinic(
-        id: widget.clinic?.id ?? '',
-        clinicId: widget.clinic?.clinicId ?? 0,
-        name: _nameController.text.trim(),
-        address: _addressController.text.trim(),
-        regNo: _regNoController.text.trim(),
-        logo: _logoController.text.trim().isEmpty ? null : _logoController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
-        clinicFee: double.parse(_feeController.text.trim()),
-        doctorId: doctor.id,
-        isActive: true,
-        createdAt: widget.clinic?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      Map<String, dynamic> result;
-      
-      if (widget.isEditMode) {
-        result = await ClinicService.updateClinic(clinic.id, clinic);
-      } else {
-        result = await ClinicService.createClinic(clinic);
-      }
-
-      if (result['success']) {
-        _showSuccessSnackBar(result['message']);
-        Navigator.of(context).pop(true); // Return true to indicate success
-      } else {
-        _showErrorSnackBar(result['message']);
-      }
-    } catch (error) {
-      _showErrorSnackBar('An error occurred. Please try again.');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+    final doctor = _authController.currentDoctor.value;
+    if (doctor == null) {
+      Get.snackbar('Error', 'Doctor not found. Please login again.');
+      return;
     }
-  }
 
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
+    final clinic = Clinic(
+      id: widget.clinic?.id ?? '',
+      clinicId: widget.clinic?.clinicId ?? 0,
+      name: _nameController.text.trim(),
+      address: _addressController.text.trim(),
+      regNo: _regNoController.text.trim(),
+      logo: _logoController.text.trim().isEmpty ? null : _logoController.text.trim(),
+      phoneNumber: _phoneController.text.trim(),
+      clinicFee: double.parse(_feeController.text.trim()),
+      doctorId: doctor.id,
+      isActive: true,
+      isOnline: false,
+      createdAt: widget.clinic?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
     );
-  }
 
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    bool success;
+    if (widget.isEditMode) {
+      success = await _clinicController.updateClinic(clinic.id, clinic);
+    } else {
+      success = await _clinicController.createClinic(clinic);
+    }
+
+    if (success) {
+      Get.back(result: true);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isEditMode ? 'Edit Clinic' : 'Add Clinic'),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue.shade800, Colors.blue.shade400],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+      appBar: AppAppBar(
+        title: widget.isEditMode ? 'Edit Clinic' : 'Add Clinic',
         actions: [
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-            ),
+          Obx(() => _clinicController.isLoading.value
+              ? const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink()),
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade50, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+        decoration: const BoxDecoration(
+          gradient: AppColors.backgroundGradient,
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -172,71 +129,26 @@ class _ClinicFormScreenState extends State<ClinicFormScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Card
-                Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade100,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                Icons.local_hospital,
-                                color: Colors.blue.shade700,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.isEditMode ? 'Update Clinic Information' : 'Add Your Clinic',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    widget.isEditMode 
-                                        ? 'Update your clinic details below'
-                                        : 'Fill in your clinic information to get started',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                AppCard(
+                  child: AppCardHeader(
+                    title: widget.isEditMode ? 'Update Clinic Information' : 'Add Your Clinic',
+                    subtitle: widget.isEditMode 
+                        ? 'Update your clinic details below'
+                        : 'Fill in your clinic information to get started',
+                    icon: Icons.local_hospital,
+                    iconColor: AppColors.primary,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
                   ),
                 ),
 
                 const SizedBox(height: 24),
 
                 // Form Fields
-                _buildFormField(
+                AppTextField(
                   controller: _nameController,
                   label: 'Clinic Name',
                   hint: 'Enter your clinic name',
-                  icon: Icons.business,
+                  prefixIcon: Icons.business,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter clinic name';
@@ -247,11 +159,11 @@ class _ClinicFormScreenState extends State<ClinicFormScreen> {
 
                 const SizedBox(height: 16),
 
-                _buildFormField(
+                AppTextField(
                   controller: _addressController,
                   label: 'Address',
                   hint: 'Enter complete clinic address',
-                  icon: Icons.location_on,
+                  prefixIcon: Icons.location_on,
                   maxLines: 3,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -266,11 +178,11 @@ class _ClinicFormScreenState extends State<ClinicFormScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _buildFormField(
+                      child: AppTextField(
                         controller: _regNoController,
                         label: 'Registration Number',
                         hint: 'Enter registration number',
-                        icon: Icons.assignment,
+                        prefixIcon: Icons.assignment,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Please enter registration number';
@@ -281,11 +193,11 @@ class _ClinicFormScreenState extends State<ClinicFormScreen> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: _buildFormField(
+                      child: AppTextField(
                         controller: _phoneController,
                         label: 'Phone Number',
                         hint: 'Enter phone number',
-                        icon: Icons.phone,
+                        prefixIcon: Icons.phone,
                         keyboardType: TextInputType.phone,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -300,11 +212,11 @@ class _ClinicFormScreenState extends State<ClinicFormScreen> {
 
                 const SizedBox(height: 16),
 
-                _buildFormField(
+                AppTextField(
                   controller: _feeController,
                   label: 'Consultation Fee',
                   hint: 'Enter consultation fee',
-                  icon: Icons.attach_money,
+                  prefixIcon: Icons.attach_money,
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -322,93 +234,32 @@ class _ClinicFormScreenState extends State<ClinicFormScreen> {
 
                 const SizedBox(height: 16),
 
-                _buildFormField(
+                AppTextField(
                   controller: _logoController,
                   label: 'Logo URL (Optional)',
                   hint: 'Enter logo image URL',
-                  icon: Icons.image,
+                  prefixIcon: Icons.image,
                   validator: (value) {
-                    // Optional field, no validation needed
-                    return null;
+                    return null; // Optional field
                   },
                 ),
 
                 const SizedBox(height: 32),
 
                 // Save Button
-                SizedBox(
+                Obx(() => AppButton(
+                  text: widget.isEditMode ? 'Update Clinic' : 'Create Clinic',
+                  onPressed: _clinicController.isLoading.value ? null : _saveClinic,
+                  isLoading: _clinicController.isLoading.value,
+                  type: AppButtonType.primary,
+                  size: AppButtonSize.large,
                   width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _saveClinic,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade700,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 4,
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            widget.isEditMode ? 'Update Clinic' : 'Create Clinic',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
+                )),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildFormField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    required String? Function(String?) validator,
-    TextInputType? keyboardType,
-    int maxLines = 1,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.blue.shade600),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      ),
-      validator: validator,
     );
   }
 }

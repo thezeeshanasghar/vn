@@ -1,167 +1,244 @@
-# Doctor Portal App
+# Vaccine Management System - Backend API
 
-This Flutter application serves as the Doctor Portal for the Patient Management System. It allows doctors to log in using their credentials (email/phone number and auto-generated password) created by the Admin Management System.
+A comprehensive Node.js/Express backend API for managing child vaccination schedules, clinics, doctors, patients, and vaccine inventory.
 
-## Features
-
-- Professional and responsive login screen with form validation
-- Secure authentication using tokens
-- Integration with the existing Node.js backend API
-- Welcome dashboard displaying doctor's profile information
-- Quick action buttons for common tasks
-- Logout functionality
-
-## Project Structure
-
-```
-doctor_portal_app/
-├── lib/
-│   ├── main.dart                 # App entry point
-│   ├── models/
-│   │   └── doctor.dart          # Doctor data model
-│   ├── services/
-│   │   └── auth_service.dart    # Authentication service
-│   └── screens/
-│       ├── login_screen.dart    # Beautiful login screen
-│       └── dashboard_screen.dart # Welcome dashboard
-├── test/
-│   └── widget_test.dart         # Basic tests
-├── pubspec.yaml                 # Dependencies
-└── README.md                    # This file
-```
-
-## Setup and Run
+## 🚀 Quick Start
 
 ### Prerequisites
+- Node.js 18+ and npm
+- MongoDB (local or via Docker)
+- Git
 
-- Flutter SDK installed (version 3.0.0 or higher recommended)
-- Node.js backend running (preferably via Docker as described in the main project README)
-- The backend should be accessible at `http://localhost:3000`
+### Installation & Setup
 
-### 1. Navigate to the App Directory
-
+1. **Install Dependencies**
 ```bash
-cd doctor_portal_app
+   npm install
+   ```
+
+2. **Configure Environment Variables**
+   ```bash
+   # Copy the example config file
+   cp config.env.example config.env
+   
+   # Edit config.env with your settings:
+   # - MONGODB_URI: MongoDB connection string
+   # - PORT: Server port (default: 3000)
+   # - JWT_SECRET: Secret key for JWT tokens
+   ```
+
+3. **Start MongoDB** (if running locally)
+```bash
+   # Using Docker:
+   docker run -d -p 27017:27017 --name mongodb mongo:latest
+   
+   # Or use your existing MongoDB instance
+   ```
+
+4. **Run the Server**
+   ```bash
+   # Development mode (with auto-reload):
+   npm run dev
+   
+   # Production mode:
+   npm start
+   ```
+
+5. **Access the API**
+   - API Base URL: `http://localhost:3000`
+   - Health Check: `http://localhost:3000/api/health`
+   - API Documentation: `http://localhost:3000/api-docs`
+
+## 📁 Project Structure
+
+```
+backend/
+├── src/
+│   ├── app.js                 # Main application entry point
+│   ├── config/
+│   │   ├── database.js        # MongoDB connection
+│   │   └── swagger.js         # API documentation config
+│   ├── models/                # Mongoose data models
+│   │   ├── Brand.js
+│   │   ├── Clinic.js
+│   │   ├── Doctor.js
+│   │   ├── DoctorSchedule.js  # Doctor vaccination schedules
+│   │   ├── Dose.js
+│   │   ├── Patient.js
+│   │   └── Vaccine.js
+│   └── routes/                 # API route handlers
+│       ├── authRoutes.js
+│       ├── brandRoutes.js
+│       ├── clinicRoutes.js
+│       ├── doctorRoutes.js
+│       ├── doctorScheduleRoutes.js
+│       ├── doseRoutes.js
+│       ├── patientRoutes.js
+│       └── vaccineRoutes.js
+├── config.env                  # Environment variables (not in git)
+├── config.env.example          # Example config file
+├── package.json
+├── Dockerfile
+└── README.md
 ```
 
-### 2. Get Dependencies
+## 🔌 API Endpoints
 
-```bash
-flutter pub get
-```
+### Health & Info
+- `GET /api/health` - Health check
+- `GET /` - API information
 
-### 3. Run the Application
-
-You can run the application on a web server (recommended for quick testing) or on an emulator/device.
-
-#### Option A: Run on Web Server (Port 8082)
-
-```bash
-flutter run -d web-server --web-port 8082
-```
-Access the app in your browser at `http://localhost:8082`.
-
-#### Option B: Run on an Emulator/Device
-
-Ensure you have an Android emulator, iOS simulator, or a physical device connected and configured.
-
-```bash
-flutter run
-```
-
-## Testing the Login
-
-To test the login functionality:
-
-1. **Ensure your backend is running** (e.g., using `docker-compose up -d` from the main project root)
-2. **Access the Admin Management System** at `http://localhost:8081`
-3. **Create a new Doctor** account through the Admin Management System. Note down:
-   - Email or Mobile Number
-   - Auto-generated Password
-4. **Use these credentials** in the Doctor Portal App (`http://localhost:8082`) to log in
-
-Upon successful login, you should be redirected to the Doctor Dashboard.
-
-## API Endpoints
-
-The app connects to these backend endpoints:
-
+### Authentication
 - `POST /api/auth/login` - Doctor login
-- `POST /api/auth/verify` - Token verification
+- `POST /api/auth/verify` - Verify JWT token
 
-## Development
+### Vaccines
+- `GET /api/vaccines` - List all vaccines
+- `POST /api/vaccines` - Create vaccine
+- `GET /api/vaccines/:id` - Get vaccine by ID
+- `PUT /api/vaccines/:id` - Update vaccine
+- `DELETE /api/vaccines/:id` - Delete vaccine
 
-### Code Structure
-- **Models**: Data classes for API responses
-- **Services**: API communication and business logic
-- **Screens**: UI components and user interactions
+### Doses
+- `GET /api/doses` - List all doses
+- `POST /api/doses` - Create dose
+- `GET /api/doses/:id` - Get dose by ID
+- `PUT /api/doses/:id` - Update dose
+- `DELETE /api/doses/:id` - Delete dose
 
-### Key Files
-- `lib/services/auth_service.dart` - Handles authentication
-- `lib/screens/login_screen.dart` - Login UI
-- `lib/screens/dashboard_screen.dart` - Dashboard UI
+### Brands
+- `GET /api/brands` - List all brands
+- `POST /api/brands` - Create brand
+- `GET /api/brands/:id` - Get brand by ID
+- `PUT /api/brands/:id` - Update brand
+- `DELETE /api/brands/:id` - Delete brand
 
-### Adding Features
-1. Create new models in `lib/models/`
-2. Add API methods in `lib/services/`
-3. Create new screens in `lib/screens/`
-4. Update navigation in `main.dart`
+### Doctors
+- `GET /api/doctors` - List all doctors
+- `POST /api/doctors` - Create doctor
+- `GET /api/doctors/:id` - Get doctor by ID
+- `PUT /api/doctors/:id` - Update doctor
+- `DELETE /api/doctors/:id` - Delete doctor
 
----
+### Clinics
+- `GET /api/clinics` - List clinics (with doctorId filter)
+- `POST /api/clinics` - Create clinic
+- `GET /api/clinics/:id` - Get clinic by ID
+- `PUT /api/clinics/:id` - Update clinic
+- `DELETE /api/clinics/:id` - Delete clinic
 
-## 🐳 Docker Setup (Recommended)
+### Patients
+- `GET /api/patients` - List patients (with clinicId filter)
+- `POST /api/patients` - Create patient
+- `GET /api/patients/:id` - Get patient by ID
+- `PUT /api/patients/:id` - Update patient
+- `DELETE /api/patients/:id` - Delete patient
 
-For the easiest setup experience, use Docker to run all applications:
+### Doctor Schedules
+- `GET /api/doctor-schedules?doctorId=X` - Get schedules for doctor
+- `POST /api/doctor-schedules` - Create schedule(s)
+- `GET /api/doctor-schedules/:scheduleId` - Get schedule by ID
+- `PUT /api/doctor-schedules/:scheduleId` - Update schedule (planDate)
+- `DELETE /api/doctor-schedules/:scheduleId` - Delete schedule
 
-### Quick Start
+## 🔐 Environment Variables
+
+Create a `config.env` file in the backend root:
+
+```env
+# MongoDB Connection
+MONGODB_URI=mongodb://localhost:27017/vaccine_management
+
+# Server Configuration
+PORT=3000
+NODE_ENV=development
+
+# JWT Secret (change in production!)
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+```
+
+## 🐳 Docker Setup
+
+### Using Docker Compose (Recommended)
+
+From the project root:
 ```bash
-# Start all services with one command
 docker-compose up -d --build
 ```
 
-### Access URLs
-- **Backend API**: http://localhost:3000
-- **Admin System**: http://localhost:8081
-- **Doctor Portal**: http://localhost:8082
-- **Patient Panel**: http://localhost:8083
+This will start:
+- MongoDB container
+- Backend API container
+- All Flutter web apps
 
-### Test Credentials
-- **Doctor 1**: john.smith@hospital.com / Doc123!@#
-- **Doctor 2**: sarah.johnson@clinic.com / Doc456!@#
-- **Doctor 3**: michael.brown@medical.com / Doc789!@#
+### Standalone Docker
 
-For detailed Docker setup instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
+```bash
+# Build
+docker build -t vaccine-backend .
+
+# Run
+docker run -p 3000:3000 --env-file config.env --link mongodb:mongo vaccine-backend
+```
+
+## 📚 API Documentation
+
+Swagger documentation is available at:
+- URL: `http://localhost:3000/api-docs`
+- Interactive API explorer with request/response examples
+
+## 🧪 Testing
+
+```bash
+# Health check
+curl http://localhost:3000/api/health
+
+# Test login
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"identifier":"doctor@example.com","password":"password123"}'
+```
+
+## 🔧 Development
+
+### Code Structure
+- **Models**: Mongoose schemas with auto-increment IDs
+- **Routes**: Express route handlers with error handling
+- **Config**: Database and Swagger configuration
+- **App**: Main Express application setup
+
+### Key Features
+- ✅ MongoDB with Mongoose ODM
+- ✅ JWT Authentication
+- ✅ RESTful API design
+- ✅ Swagger API documentation
+- ✅ CORS enabled
+- ✅ Error handling middleware
+- ✅ Auto-increment IDs for custom ID fields
+
+## 📝 Notes
+
+- All custom ID fields (doctorId, scheduleId, etc.) use auto-increment
+- MongoDB connection is required at startup
+- JWT tokens expire after 1 hour
+- All dates use ISO 8601 format
+
+## 🐛 Troubleshooting
+
+**MongoDB Connection Error:**
+- Ensure MongoDB is running
+- Check MONGODB_URI in config.env
+- Verify network connectivity
+
+**Port Already in Use:**
+- Change PORT in config.env
+- Or stop the process using port 3000
+
+**Missing Dependencies:**
+- Run `npm install` again
+- Delete node_modules and package-lock.json, then reinstall
 
 ---
 
-## 🚀 Manual Setup (Alternative)
-
-If you prefer to run applications manually:
-
-### Backend Setup
-```bash
-npm install
-npm start
-```
-
-### Flutter Apps Setup
-```bash
-# Add Flutter to PATH (Windows)
-$env:PATH += ";C:\src\flutter\bin"
-
-# Run Admin System
-cd vaccine_app
-flutter run -d web-server --web-port 8081
-
-# Run Doctor Portal
-cd doctor_portal_app
-flutter run -d web-server --web-port 8082
-
-# Run Patient Panel
-cd patient_panel
-flutter run -d web-server --web-port 8083
-```
-
----
-
-**Note**: This system includes a complete healthcare management platform with admin, doctor, and patient interfaces. The Docker setup includes seed data for immediate testing.
+**Version:** 1.0.0  
+**License:** ISC

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/services/api_service.dart';
 import '../models/vaccine.dart';
-import '../services/api_service.dart';
+import '../core/constants/app_colors.dart';
+
 
 class VaccineFormScreen extends StatefulWidget {
   final Vaccine? vaccine;
@@ -64,23 +66,23 @@ class _VaccineFormScreenState extends State<VaccineFormScreen> {
         // Update existing vaccine
         await ApiService.updateVaccine(widget.vaccine!.id!, vaccine);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Vaccine updated successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Vaccine updated successfully'),
+            backgroundColor: AppColors.secondary,
+          ),
+        );
         }
       } else {
         // Create new vaccine
         await ApiService.createVaccine(vaccine);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Vaccine created successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Vaccine created successfully'),
+            backgroundColor: AppColors.secondary,
+          ),
+        );
         }
       }
 
@@ -92,7 +94,7 @@ class _VaccineFormScreenState extends State<VaccineFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -112,8 +114,8 @@ class _VaccineFormScreenState extends State<VaccineFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Vaccine' : 'Add Vaccine'),
-        backgroundColor: Colors.green[600],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.secondary,
+        foregroundColor: AppColors.white,
         actions: [
           if (_isLoading)
             const Padding(
@@ -135,9 +137,9 @@ class _VaccineFormScreenState extends State<VaccineFormScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.green[600]!,
-              Colors.green[400]!,
-              Colors.white,
+              AppColors.secondary,
+              AppColors.secondaryLight,
+              AppColors.white,
             ],
             stops: const [0.0, 0.1, 0.1],
           ),
@@ -152,6 +154,7 @@ class _VaccineFormScreenState extends State<VaccineFormScreen> {
                 children: [
                   Card(
                     elevation: 8,
+                    color: AppColors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -165,7 +168,7 @@ class _VaccineFormScreenState extends State<VaccineFormScreen> {
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green[700],
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -260,7 +263,7 @@ class _VaccineFormScreenState extends State<VaccineFormScreen> {
                                       _isInfinite = value ?? false;
                                     });
                                   },
-                                  activeColor: Colors.green[600],
+                                  activeColor: AppColors.secondary,
                                 ),
                               ),
                             ],
@@ -278,7 +281,7 @@ class _VaccineFormScreenState extends State<VaccineFormScreen> {
                                       _validity = value ?? true;
                                     });
                                   },
-                                  activeColor: Colors.green[600],
+                                  activeColor: AppColors.secondary,
                                 ),
                               ),
                             ],
@@ -294,8 +297,8 @@ class _VaccineFormScreenState extends State<VaccineFormScreen> {
                   ElevatedButton(
                     onPressed: _isLoading ? null : _saveVaccine,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[600],
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.secondary,
+                      foregroundColor: AppColors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),

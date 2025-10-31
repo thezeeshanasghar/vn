@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../core/services/api_service.dart';
 import '../models/vaccine.dart';
-import '../services/api_service.dart';
+import '../core/constants/app_colors.dart';
+
 import 'vaccine_form_screen.dart';
 import 'vaccine_doses_screen.dart';
 
@@ -48,9 +50,9 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
       _loadVaccines(); // Reload the list
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Vaccine deleted successfully'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Vaccine deleted successfully'),
+            backgroundColor: AppColors.secondary,
           ),
         );
       }
@@ -59,7 +61,7 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting vaccine: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -85,7 +87,7 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
                   _deleteVaccine(vaccine.id!);
                 }
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              child: Text('Delete', style: TextStyle(color: AppColors.primary)),
             ),
           ],
         );
@@ -98,8 +100,8 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vaccines'),
-        backgroundColor: Colors.green[600],
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.secondary,
+        foregroundColor: AppColors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -113,16 +115,20 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.green[600]!,
-              Colors.green[400]!,
-              Colors.white,
+              AppColors.secondary,
+              AppColors.secondaryLight,
+              AppColors.white,
             ],
             stops: const [0.0, 0.1, 0.1],
           ),
         ),
         child: SafeArea(
           child: isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                  ),
+                )
               : errorMessage != null
                   ? Center(
                       child: Column(
@@ -131,26 +137,30 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
                           Icon(
                             Icons.error_outline,
                             size: 64,
-                            color: Colors.red[300],
+                            color: AppColors.primary,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Error loading vaccines',
                             style: TextStyle(
                               fontSize: 18,
-                              color: Colors.red[700],
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             errorMessage!,
-                            style: TextStyle(color: Colors.red[600]),
+                            style: TextStyle(color: AppColors.textSecondary),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
                             onPressed: _loadVaccines,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                            ),
                             child: const Text('Retry'),
                           ),
                         ],
@@ -164,21 +174,21 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
                               Icon(
                                 Icons.vaccines_outlined,
                                 size: 64,
-                                color: Colors.grey[400],
+                                color: AppColors.textTertiary,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'No vaccines found',
                                 style: TextStyle(
                                   fontSize: 18,
-                                  color: Colors.grey[600],
+                                  color: AppColors.textPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Add your first vaccine to get started',
-                                style: TextStyle(color: Colors.grey[500]),
+                                style: TextStyle(color: AppColors.textSecondary),
                               ),
                             ],
                           ),
@@ -193,6 +203,7 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 elevation: 4,
+                                color: AppColors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -205,13 +216,13 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
                                         children: [
                                           CircleAvatar(
                                             backgroundColor: vaccine.validity
-                                                ? Colors.green[100]
-                                                : Colors.red[100],
+                                                ? AppColors.secondary.withValues(alpha: 0.1)
+                                                : AppColors.primary.withValues(alpha: 0.1),
                                             child: Icon(
                                               Icons.vaccines,
                                               color: vaccine.validity
-                                                  ? Colors.green[600]
-                                                  : Colors.red[600],
+                                                  ? AppColors.secondary
+                                                  : AppColors.primary,
                                             ),
                                           ),
                                           const SizedBox(width: 12),
@@ -221,20 +232,27 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
                                               children: [
                                                 Text(
                                                   vaccine.name,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 16,
+                                                    color: AppColors.textPrimary,
                                                   ),
                                                 ),
                                                 const SizedBox(height: 4),
-                                                Text('ID: ${vaccine.vaccineID}'),
-                                                Text('Age Range: ${vaccine.minAge}-${vaccine.maxAge} years'),
+                                                Text(
+                                                  'ID: ${vaccine.vaccineID}',
+                                                  style: TextStyle(color: AppColors.textSecondary),
+                                                ),
+                                                Text(
+                                                  'Age Range: ${vaccine.minAge}-${vaccine.maxAge} years',
+                                                  style: TextStyle(color: AppColors.textSecondary),
+                                                ),
                                                 Text(
                                                   'Status: ${vaccine.validity ? "Valid" : "Invalid"}',
                                                   style: TextStyle(
                                                     color: vaccine.validity
-                                                        ? Colors.green[600]
-                                                        : Colors.red[600],
+                                                        ? AppColors.secondary
+                                                        : AppColors.primary,
                                                     fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
@@ -257,23 +275,23 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
                                               }
                                             },
                                             itemBuilder: (context) => [
-                                              const PopupMenuItem(
+                                              PopupMenuItem(
                                                 value: 'edit',
                                                 child: Row(
                                                   children: [
-                                                    Icon(Icons.edit, color: Colors.blue),
-                                                    SizedBox(width: 8),
-                                                    Text('Edit'),
+                                                    Icon(Icons.edit, color: AppColors.primary),
+                                                    const SizedBox(width: 8),
+                                                    Text('Edit', style: TextStyle(color: AppColors.textPrimary)),
                                                   ],
                                                 ),
                                               ),
-                                              const PopupMenuItem(
+                                              PopupMenuItem(
                                                 value: 'delete',
                                                 child: Row(
                                                   children: [
-                                                    Icon(Icons.delete, color: Colors.red),
-                                                    SizedBox(width: 8),
-                                                    Text('Delete'),
+                                                    Icon(Icons.delete, color: AppColors.primary),
+                                                    const SizedBox(width: 8),
+                                                    Text('Delete', style: TextStyle(color: AppColors.textPrimary)),
                                                   ],
                                                 ),
                                               ),
@@ -298,8 +316,8 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
                                           icon: const Icon(Icons.medication, size: 18),
                                           label: const Text('Manage Doses'),
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.orange[600],
-                                            foregroundColor: Colors.white,
+                                            backgroundColor: AppColors.primary,
+                                            foregroundColor: AppColors.white,
                                             padding: const EdgeInsets.symmetric(vertical: 12),
                                             shape: RoundedRectangleBorder(
                                               borderRadius: BorderRadius.circular(8),
@@ -325,8 +343,8 @@ class _VaccineListScreenState extends State<VaccineListScreen> {
             ),
           ).then((_) => _loadVaccines());
         },
-        backgroundColor: Colors.green[600],
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: AppColors.secondary,
+        child: const Icon(Icons.add, color: AppColors.white),
       ),
     );
   }

@@ -2,10 +2,10 @@
   "name": "vaccine-backend",
   "version": "1.0.0",
   "description": "Vaccine Management System Backend",
-  "main": "server.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["vaccine", "nodejs", "mongodb", "api"],
