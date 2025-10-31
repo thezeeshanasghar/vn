@@ -38,7 +38,13 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.clinicForm,
-      page: () => const ClinicFormScreen(),
+      page: () {
+        final args = Get.arguments is Map ? (Get.arguments as Map) : {};
+        return ClinicFormScreen(
+          clinic: args['clinic'],
+          isEditMode: args['isEditMode'] == true,
+        );
+      },
       binding: BindingsBuilder(() {
         Get.put(ClinicController());
       }),

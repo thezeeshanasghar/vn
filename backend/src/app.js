@@ -22,6 +22,33 @@ require('dotenv').config({ path: path.join(__dirname, '..', 'config.env') });
 // Connect to database
 connectDB();
 
+// Fix legacy indexes and ensure expected ones exist
+// We run this after connection is initiated; operations will await driver readiness
+(async () => {
+  try {
+    const Patient = require('./models/Patient');
+    // Drop legacy unique index on mobileNumber if it exists
+    try {
+      const exists = await Patient.collection.indexExists('mobileNumber_1');
+      if (exists) {
+        await Patient.collection.dropIndex('mobileNumber_1');
+        console.log('🧹 Dropped legacy index: mobileNumber_1');
+      }
+    } catch (_) {
+      // ignore
+    }
+    // Ensure CNIC unique per clinic index exists (defined in schema, but ensure once)
+    try {
+      await Patient.collection.createIndex({ clinicId: 1, cnic: 1 }, { unique: true, sparse: true, name: 'clinicId_1_cnic_1_unique' });
+      console.log('✅ Ensured index: clinicId_1_cnic_1_unique');
+    } catch (_) {
+      // ignore
+    }
+  } catch (e) {
+    console.log('Index initialization skipped:', e.message);
+  }
+})();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 

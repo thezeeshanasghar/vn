@@ -402,29 +402,27 @@ class _SelectDosesScreenState extends State<SelectDosesScreen> {
                                                 ),
                                               ),
                                             const SizedBox(height: 8),
-                                            Row(
+                                            Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
                                               children: [
                                                 _buildInfoChip(
                                                   Icons.calendar_today,
                                                   'Age: ${dose.minAge}-${dose.maxAge} years',
                                                   Colors.orange.shade700,
                                                 ),
-                                                if (dose.minGap > 0) ...[
-                                                  const SizedBox(width: 8),
+                                                if (dose.minGap > 0)
                                                   _buildInfoChip(
                                                     Icons.schedule,
                                                     'Gap: ${dose.minGap} days',
                                                     Colors.green.shade700,
                                                   ),
-                                                ],
-                                                if (isDisabled) ...[
-                                                  const SizedBox(width: 8),
+                                                if (isDisabled)
                                                   _buildInfoChip(
                                                     Icons.check_circle,
                                                     'Already Scheduled',
                                                     Colors.blue.shade700,
                                                   ),
-                                                ],
                                               ],
                                             ),
                                           ],

@@ -32,6 +32,13 @@ const PatientSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Ensure business rules:
+// - CNIC must be unique per clinic (allow null/empty CNIC)
+PatientSchema.index(
+  { clinicId: 1, cnic: 1 },
+  { unique: true, sparse: true, name: 'clinicId_1_cnic_1_unique' }
+);
+
 // Auto-increment patientId
 PatientSchema.pre('save', async function setIncrement(next) {
   if (this.patientId) return next();
