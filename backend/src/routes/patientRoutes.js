@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Patient = require('../models/Patient');
+const DoctorSchedule = require('../models/DoctorSchedule');
+const PatientSchedule = require('../models/PatientSchedule');
 
 // GET /api/patients - list with optional filters: doctorId, clinicId, isActive, search
 router.get('/', async (req, res) => {
@@ -17,11 +19,6 @@ router.get('/', async (req, res) => {
     const patients = await Patient.find(query).sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: patients.length, data: patients });
   } catch (err) {
-    if (err && err.code === 11000) {
-      const field = Object.keys(err.keyPattern || {})[0] || 'value';
-      const friendly = field === 'mobileNumber' ? 'Mobile number' : field.toUpperCase();
-      return res.status(400).json({ success: false, message: `${friendly} already exists` });
-    }
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -46,11 +43,6 @@ router.get('/counts', async (req, res) => {
     
     res.status(200).json({ success: true, data: result });
   } catch (err) {
-    if (err && err.code === 11000) {
-      const field = Object.keys(err.keyPattern || {})[0] || 'value';
-      const friendly = field === 'mobileNumber' ? 'Mobile number' : field.toUpperCase();
-      return res.status(400).json({ success: false, message: `${friendly} already exists` });
-    }
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -70,58 +62,48 @@ router.get('/:patientId', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const payload = req.body || {};
-    if (!payload.name || !payload.gender || !payload.dateOfBirth || !payload.clinicId || !payload.doctorId) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
-    }
     
-    // Check for duplicate CNIC in the same clinic
-    if (payload.cnic) {
-      const existingPatient = await Patient.findOne({ 
-        cnic: payload.cnic, 
-        clinicId: payload.clinicId 
-      });
-      if (existingPatient) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'A patient with this CNIC already exists in this clinic' 
+    // Create the patient (no validation checks)
+    const created = await Patient.create(payload);
+    
+    // Get all active schedules for this doctor
+    const doctorSchedules = await DoctorSchedule.find({ 
+      doctorId: Number(payload.doctorId),
+      isActive: true 
+    });
+    
+    // Create PatientSchedule entries for each doctor schedule (including planDate)
+    // Use create() instead of insertMany() to trigger pre('save') hooks for auto-increment
+    if (doctorSchedules.length > 0 && created.patientId) {
+      for (const doctorSchedule of doctorSchedules) {
+        await PatientSchedule.create({
+          childId: created.patientId,
+          doseId: doctorSchedule.doseId,
+          planDate: doctorSchedule.planDate || null, // Copy planDate from doctor's schedule
+          givenDate: null,
+          brandId: null,
         });
       }
     }
     
-    const created = await Patient.create(payload);
     res.status(201).json({ success: true, data: created });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: err.message || 'Failed to create patient' });
   }
 });
 
 // PUT /api/patients/:patientId
 router.put('/:patientId', async (req, res) => {
   try {
-    // Check for duplicate CNIC in the same clinic (excluding current patient)
-    if (req.body.cnic) {
-      const existingPatient = await Patient.findOne({ 
-        cnic: req.body.cnic, 
-        clinicId: req.body.clinicId,
-        patientId: { $ne: Number(req.params.patientId) }
-      });
-      if (existingPatient) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'A patient with this CNIC already exists in this clinic' 
-        });
-      }
-    }
-    
     const updated = await Patient.findOneAndUpdate(
       { patientId: Number(req.params.patientId) },
       req.body || {},
-      { new: true }
+      { new: true, runValidators: false }
     );
     if (!updated) return res.status(404).json({ success: false, message: 'Patient not found' });
     res.status(200).json({ success: true, data: updated });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: err.message || 'Failed to update patient' });
   }
 });
 

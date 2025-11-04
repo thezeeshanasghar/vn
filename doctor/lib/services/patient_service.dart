@@ -36,7 +36,16 @@ class PatientService {
       final data = json.decode(res.body) as Map<String, dynamic>;
       return Patient.fromJson(data['data'] as Map<String, dynamic>);
     }
-    throw Exception('Failed to create patient');
+    
+    // Extract error message from response
+    try {
+      final errorData = json.decode(res.body) as Map<String, dynamic>;
+      final message = errorData['message'] as String? ?? 'Failed to create patient';
+      throw Exception(message);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Failed to create patient');
+    }
   }
 
   static Future<Patient> updatePatient(int patientId, Patient patient) async {
@@ -49,7 +58,16 @@ class PatientService {
       final data = json.decode(res.body) as Map<String, dynamic>;
       return Patient.fromJson(data['data'] as Map<String, dynamic>);
     }
-    throw Exception('Failed to update patient');
+    
+    // Extract error message from response
+    try {
+      final errorData = json.decode(res.body) as Map<String, dynamic>;
+      final message = errorData['message'] as String? ?? 'Failed to update patient';
+      throw Exception(message);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Failed to update patient');
+    }
   }
 
   static Future<void> deletePatient(int patientId) async {
