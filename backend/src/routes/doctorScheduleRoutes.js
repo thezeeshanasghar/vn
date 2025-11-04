@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const DoctorSchedule = require('../models/DoctorSchedule');
+const PatientSchedule = require('../models/PatientSchedule');
+const Patient = require('../models/Patient');
 const Dose = require('../models/Dose');
 
 // GET /api/doctor-schedules - Get schedules for a doctor
@@ -121,31 +123,66 @@ router.get('/:scheduleId', async (req, res) => {
 // PUT /api/doctor-schedules/:scheduleId - Update schedule (mainly planDate)
 router.put('/:scheduleId', async (req, res) => {
   try {
+    // Get the current schedule before updating to check if planDate changed
+    const currentSchedule = await DoctorSchedule.findOne({ scheduleId: Number(req.params.scheduleId) });
+    if (!currentSchedule) {
+      return res.status(404).json({ success: false, message: 'Schedule not found' });
+    }
+    
     const updateData = { ...req.body };
+    const oldPlanDate = currentSchedule.planDate;
+    let newPlanDate = null;
     
     // If planDate is provided, ensure it's stored as date-only string (YYYY-MM-DD format)
-    if (updateData.planDate) {
+    if (updateData.planDate !== undefined) {
       // If it's a Date object, convert to YYYY-MM-DD
       if (updateData.planDate instanceof Date) {
         const date = new Date(updateData.planDate);
-        updateData.planDate = date.toISOString().split('T')[0];
-      } else if (typeof updateData.planDate === 'string') {
+        newPlanDate = date.toISOString().split('T')[0];
+      } else if (typeof updateData.planDate === 'string' && updateData.planDate.trim() !== '') {
         // Validate and normalize date string to YYYY-MM-DD
         const dateMatch = updateData.planDate.match(/^(\d{4}-\d{2}-\d{2})/);
         if (dateMatch) {
-          updateData.planDate = dateMatch[1];
+          newPlanDate = dateMatch[1];
         }
+      } else if (updateData.planDate === null || updateData.planDate === '') {
+        newPlanDate = null;
       }
+      updateData.planDate = newPlanDate;
     }
     
+    // Update the doctor schedule
     const updated = await DoctorSchedule.findOneAndUpdate(
       { scheduleId: Number(req.params.scheduleId) },
       updateData,
       { new: true }
     );
-    if (!updated) {
-      return res.status(404).json({ success: false, message: 'Schedule not found' });
+    
+    // If planDate was changed, update all related patient schedules
+    if (updateData.planDate !== undefined && oldPlanDate !== newPlanDate) {
+      const doctorId = currentSchedule.doctorId;
+      const doseId = currentSchedule.doseId;
+      
+      // Find all patients belonging to this doctor
+      const patients = await Patient.find({ doctorId: doctorId });
+      const patientIds = patients.map(p => p.patientId);
+      
+      if (patientIds.length > 0) {
+        // Update all patient schedules with matching doseId and null givenDate
+        // Only update schedules where vaccine hasn't been given yet
+        await PatientSchedule.updateMany(
+          {
+            childId: { $in: patientIds },
+            doseId: doseId,
+            givenDate: null, // Only update if vaccine hasn't been administered
+          },
+          {
+            $set: { planDate: newPlanDate }
+          }
+        );
+      }
     }
+    
     res.status(200).json({ success: true, data: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
