@@ -3,13 +3,26 @@ const router = express.Router();
 const Bill = require('../models/Bill');
 const BrandArrival = require('../models/BrandArrival');
 const Brand = require('../models/Brand');
+const Clinic = require('../models/Clinic');
+const ClinicInventory = require('../models/ClinicInventory');
 
 // POST /api/bills -> create bill with lines [{brandId, quantity}]
 router.post('/', async (req, res) => {
   try {
-    const { doctorId, supplierId, date, paid, lines } = req.body || {};
+    const { doctorId, clinicId, supplierId, date, paid, lines } = req.body || {};
     if (!doctorId || !supplierId || !Array.isArray(lines) || lines.length === 0) {
       return res.status(400).json({ success: false, message: 'doctorId, supplierId and at least one line are required' });
+    }
+
+    // Validate clinic belongs to doctor if clinicId is provided
+    let validatedClinicId = null;
+    
+    if (clinicId !== undefined && clinicId !== null) {
+      const clinic = await Clinic.findOne({ clinicId: Number(clinicId), doctorId: Number(doctorId), isActive: true });
+      if (!clinic) {
+        return res.status(400).json({ success: false, message: 'Clinic not found or does not belong to this doctor' });
+      }
+      validatedClinicId = Number(clinic.clinicId);
     }
 
     // Compute prices from Brand.amount
@@ -36,15 +49,93 @@ router.post('/', async (req, res) => {
       paid: !!paid,
     });
 
-    // Save arrivals referencing billId
-    for (const pl of pricedLines) {
-      await BrandArrival.create({ ...pl, billId: bill.billId });
+    // Save arrivals referencing billId and clinicId
+    const createdArrivals = [];
+    const arrivalErrors = [];
+    
+    for (let i = 0; i < pricedLines.length; i++) {
+      const pl = pricedLines[i];
+      try {
+        const arrivalData = {
+          brandId: pl.brandId,
+          quantity: pl.quantity,
+          unitPrice: pl.unitPrice,
+          lineTotal: pl.lineTotal,
+          billId: bill.billId,
+        };
+        
+        // Explicitly set clinicId - ensure it's always included even if null
+        if (validatedClinicId !== null && validatedClinicId !== undefined) {
+          arrivalData.clinicId = validatedClinicId;
+        } else {
+          arrivalData.clinicId = null;
+        }
+        
+        const createdArrival = await BrandArrival.create(arrivalData);
+        createdArrivals.push(createdArrival);
+
+        // Update clinic inventory if clinicId is provided
+        if (validatedClinicId !== null && validatedClinicId !== undefined) {
+          try {
+            // Check if inventory record exists
+            let inventory = await ClinicInventory.findOne({
+              clinicId: validatedClinicId,
+              brandId: pl.brandId
+            });
+
+            if (inventory) {
+              // Update existing inventory
+              inventory.quantity += pl.quantity;
+              await inventory.save();
+            } else {
+              // Create new inventory record (this will trigger pre-save hook for inventoryId)
+              inventory = new ClinicInventory({
+                clinicId: validatedClinicId,
+                brandId: pl.brandId,
+                quantity: pl.quantity
+              });
+              await inventory.save();
+            }
+          } catch (inventoryError) {
+            console.error(`Failed to update clinic inventory for clinicId ${validatedClinicId}, brandId ${pl.brandId}:`, inventoryError);
+            // Don't fail the entire operation if inventory update fails
+          }
+        }
+      } catch (arrivalError) {
+        console.error(`Failed to create brand arrival:`, arrivalError);
+        arrivalErrors.push({
+          index: i,
+          line: pl,
+          error: arrivalError.message
+        });
+      }
     }
 
-    return res.status(201).json({ success: true, data: { bill, lines: pricedLines } });
+    // If no arrivals were created, delete the bill and return error
+    if (createdArrivals.length === 0) {
+      await Bill.deleteOne({ billId: bill.billId });
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to create any brand arrivals. Bill was not created.',
+        errors: arrivalErrors
+      });
+    }
+
+    return res.status(201).json({ 
+      success: true, 
+      data: { 
+        bill, 
+        lines: pricedLines,
+        arrivalsCreated: createdArrivals.length,
+        totalLines: pricedLines.length
+      } 
+    });
   } catch (error) {
     console.error('Create bill error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Failed to create bill'
+    });
   }
 });
 

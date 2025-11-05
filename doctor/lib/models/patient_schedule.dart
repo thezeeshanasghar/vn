@@ -8,6 +8,7 @@ class PatientSchedule {
   final int? brandId;
   final bool IsDone;
   final DoseInfo? dose;
+  final BrandInfo? brand;
 
   PatientSchedule({
     this.id,
@@ -19,6 +20,7 @@ class PatientSchedule {
     this.brandId,
     this.IsDone = false,
     this.dose,
+    this.brand,
   });
 
   static DateTime? _parseDateString(dynamic dateValue) {
@@ -67,6 +69,9 @@ class PatientSchedule {
       dose: json['dose'] != null
           ? DoseInfo.fromJson(json['dose'] as Map<String, dynamic>)
           : null,
+      brand: json['brand'] != null
+          ? BrandInfo.fromJson(json['brand'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -106,6 +111,26 @@ class DoseInfo {
       maxAge: (json['maxAge'] as num?)?.toInt(),
       minGap: (json['minGap'] as num?)?.toInt(),
       vaccineID: json['vaccineID'] as String?,
+    );
+  }
+}
+
+class BrandInfo {
+  final int? brandId;
+  final String? name;
+  final double? amount;
+
+  BrandInfo({
+    this.brandId,
+    this.name,
+    this.amount,
+  });
+
+  factory BrandInfo.fromJson(Map<String, dynamic> json) {
+    return BrandInfo(
+      brandId: (json['brandId'] as num?)?.toInt(),
+      name: json['name'] as String?,
+      amount: (json['amount'] as num?)?.toDouble(),
     );
   }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../core/controllers/auth_controller.dart';
 
 class Sidebar extends StatelessWidget {
   final int selectedIndex;
@@ -108,80 +110,118 @@ class Sidebar extends StatelessWidget {
                   index: 3,
                 ),
                 _buildNavItem(
+                  icon: Icons.warehouse_outlined,
+                  title: 'Brand Inventory',
+                  index: 4,
+                ),
+                _buildNavItem(
                   icon: Icons.calendar_today,
                   title: 'Appointments',
-                  index: 4,
+                  index: 5,
                 ),
                 _buildNavItem(
                   icon: Icons.medical_information,
                   title: 'Medical Records',
-                  index: 5,
+                  index: 6,
                 ),
                 const SizedBox(height: 20),
                 _buildNavItem(
                   icon: Icons.settings,
                   title: 'Settings',
-                  index: 6,
+                  index: 7,
                 ),
                 _buildNavItem(
                   icon: Icons.help_outline,
                   title: 'Help & Support',
-                  index: 7,
+                  index: 8,
                 ),
               ],
             ),
           ),
           
           // Footer
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                const Divider(color: Colors.white24),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Dr. User',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
+          Obx(() {
+            final authController = Get.find<AuthController>();
+            final doctor = authController.currentDoctor.value;
+            
+            return Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  const Divider(color: Colors.white24),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white.withOpacity(0.3),
+                              Colors.white.withOpacity(0.2),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          Text(
-                            'General Practitioner',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 12,
-                            ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1,
                           ),
-                        ],
+                        ),
+                        child: doctor?.firstName != null && doctor!.firstName.isNotEmpty
+                            ? Center(
+                                child: Text(
+                                  doctor.firstName[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              doctor != null
+                                  ? 'Dr. ${doctor.firstName} ${doctor.lastName}'
+                                  : 'Dr. User',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              doctor?.type ?? 'General Practitioner',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );

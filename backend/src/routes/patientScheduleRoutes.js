@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const PatientSchedule = require('../models/PatientSchedule');
 const Dose = require('../models/Dose');
+const ClinicInventory = require('../models/ClinicInventory');
+const Patient = require('../models/Patient');
+const Brand = require('../models/Brand');
 
 // GET /api/patient-schedules - Get schedules for a child/patient
 router.get('/', async (req, res) => {
@@ -13,10 +16,11 @@ router.get('/', async (req, res) => {
 
     const schedules = await PatientSchedule.find({ childId: Number(childId) }).sort({ createdAt: 1 });
     
-    // Populate dose information and normalize givenDate format
+    // Populate dose and brand information and normalize givenDate format
     const schedulesWithDoses = await Promise.all(
       schedules.map(async (schedule) => {
         const dose = await Dose.findOne({ doseId: schedule.doseId });
+        const brand = schedule.brandId ? await Brand.findOne({ brandId: schedule.brandId }) : null;
         const scheduleObj = schedule.toObject();
         
         // Normalize givenDate to YYYY-MM-DD string format
@@ -50,6 +54,11 @@ router.get('/', async (req, res) => {
             minGap: dose.minGap,
             vaccineID: dose.vaccineID,
           } : null,
+          brand: brand ? {
+            brandId: brand.brandId,
+            name: brand.name,
+            amount: brand.amount,
+          } : null,
         };
       })
     );
@@ -68,8 +77,9 @@ router.get('/:scheduleId', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Schedule not found' });
     }
     
-    // Populate dose information and normalize givenDate format
+    // Populate dose and brand information and normalize givenDate format
     const dose = await Dose.findOne({ doseId: schedule.doseId });
+    const brand = schedule.brandId ? await Brand.findOne({ brandId: schedule.brandId }) : null;
     const scheduleObj = schedule.toObject();
     
     // Normalize givenDate to YYYY-MM-DD string format
@@ -102,6 +112,11 @@ router.get('/:scheduleId', async (req, res) => {
         maxAge: dose.maxAge,
         minGap: dose.minGap,
         vaccineID: dose.vaccineID,
+      } : null,
+      brand: brand ? {
+        brandId: brand.brandId,
+        name: brand.name,
+        amount: brand.amount,
       } : null,
     };
     
@@ -201,6 +216,16 @@ router.put('/:scheduleId', async (req, res) => {
       updateData.IsDone = Boolean(updateData.IsDone);
     }
     
+    // Get the current schedule to check if IsDone is changing
+    const currentSchedule = await PatientSchedule.findOne({ scheduleId: Number(req.params.scheduleId) });
+    if (!currentSchedule) {
+      return res.status(404).json({ success: false, message: 'Schedule not found' });
+    }
+    
+    const wasDone = currentSchedule.IsDone;
+    const willBeDone = updateData.IsDone !== undefined ? updateData.IsDone : wasDone;
+    const brandId = updateData.brandId !== undefined ? updateData.brandId : currentSchedule.brandId;
+    
     // Update only the specific patient schedule (does NOT affect doctor's schedule)
     const updated = await PatientSchedule.findOneAndUpdate(
       { scheduleId: Number(req.params.scheduleId) },
@@ -210,6 +235,55 @@ router.put('/:scheduleId', async (req, res) => {
     
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Schedule not found' });
+    }
+    
+    // Handle inventory updates when IsDone status changes
+    if (wasDone !== willBeDone && brandId) {
+      try {
+        // Get patient to find clinicId
+        const patient = await Patient.findOne({ patientId: updated.childId });
+        if (patient && patient.clinicId) {
+          // Find or create inventory record
+          let inventory = await ClinicInventory.findOne({
+            clinicId: Number(patient.clinicId),
+            brandId: Number(brandId)
+          });
+          
+          if (willBeDone) {
+            // Marking as done - decrease inventory by 1
+            if (inventory) {
+              inventory.quantity = Math.max(0, inventory.quantity - 1);
+              await inventory.save();
+            } else {
+              // Create new inventory record with 0 quantity (shouldn't happen but handle it)
+              inventory = new ClinicInventory({
+                clinicId: Number(patient.clinicId),
+                brandId: Number(brandId),
+                quantity: 0
+              });
+              await inventory.save();
+            }
+          } else {
+            // Marking as undone - increase inventory by 1
+            if (inventory) {
+              inventory.quantity += 1;
+              await inventory.save();
+            } else {
+              // Create new inventory record with quantity 1
+              inventory = new ClinicInventory({
+                clinicId: Number(patient.clinicId),
+                brandId: Number(brandId),
+                quantity: 1
+              });
+              await inventory.save();
+            }
+          }
+        }
+      } catch (inventoryError) {
+        console.error('Failed to update clinic inventory:', inventoryError);
+        // Don't fail the entire operation if inventory update fails
+        // Log the error but continue
+      }
     }
     
     res.status(200).json({ success: true, data: updated });

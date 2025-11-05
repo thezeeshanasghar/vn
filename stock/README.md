@@ -41,4 +41,4 @@ flutter run -d web-server --web-port 8083
 
   cd D:\Vaccine-Flutter-Node\MERN\vn\stock
   flutter pub get
-  flutter run -d chrome --web-port 8080
+  flutter run -d chrome --web-port 8082

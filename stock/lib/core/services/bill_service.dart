@@ -5,6 +5,7 @@ import '../constants/api_config.dart';
 class BillService {
   static Future<Map<String, dynamic>> create({
     required int doctorId,
+    int? clinicId,
     required int supplierId,
     required DateTime date,
     required List<Map<String, dynamic>> lines,
@@ -15,6 +16,7 @@ class BillService {
       headers: ApiConfig.defaultHeaders,
       body: json.encode({
         'doctorId': doctorId,
+        if (clinicId != null) 'clinicId': clinicId,
         'supplierId': supplierId,
         'date': date.toIso8601String(),
         'paid': paid,

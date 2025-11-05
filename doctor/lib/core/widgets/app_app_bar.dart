@@ -75,6 +75,18 @@ class AppAppBarWithUser extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
   });
 
+  void _showProfileMenu(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (context) => _ProfileMenuDialog(
+        userName: userName,
+        userRole: userRole,
+        onLogout: onLogout,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppBar(
@@ -90,33 +102,37 @@ class AppAppBarWithUser extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         if (userName != null)
           Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: PopupMenuButton<String>(
-              tooltip: 'Account',
-              onSelected: (v) {
-                if (v == 'logout' && onLogout != null) onLogout!();
-              },
-              itemBuilder: (context) => [
-                if (userRole != null)
-                  PopupMenuItem<String>(
-                    enabled: false,
-                    value: 'role',
-                    child: Text(userRole!),
+            padding: const EdgeInsets.only(right: 12),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _showProfileMenu(context),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.white.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.white.withOpacity(0.3),
+                      width: 1.5,
+                    ),
                   ),
-                const PopupMenuDivider(),
-                const PopupMenuItem<String>(
-                  value: 'logout',
-                  child: Text('Logout'),
-                ),
-              ],
-              child: CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.white.withOpacity(0.2),
-                child: Text(
-                  (userName!.isNotEmpty ? userName![0] : '?').toUpperCase(),
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.bold,
+                  child: CircleAvatar(
+                    radius: 14,
+                    backgroundColor: Colors.transparent,
+                    child: Text(
+                      (userName!.isNotEmpty 
+                          ? userName!.split(' ').isNotEmpty 
+                              ? userName!.split(' ').first[0]
+                              : userName![0]
+                          : '?').toUpperCase(),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -138,4 +154,196 @@ class AppAppBarWithUser extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _ProfileMenuDialog extends StatelessWidget {
+  final String? userName;
+  final String? userRole;
+  final VoidCallback? onLogout;
+
+  const _ProfileMenuDialog({
+    this.userName,
+    this.userRole,
+    this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 320),
+        padding: const EdgeInsets.all(0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header with gradient
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryDark],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      color: AppColors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.white.withOpacity(0.3),
+                        width: 3,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        (userName != null && userName!.isNotEmpty
+                            ? userName!.split(' ').isNotEmpty 
+                                ? userName!.split(' ').first[0]
+                                : userName![0]
+                            : '?').toUpperCase(),
+                        style: AppTextStyles.h2.copyWith(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    userName != null && userName!.isNotEmpty
+                        ? userName!
+                        : 'Doctor',
+                    style: AppTextStyles.h5.copyWith(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (userRole != null && userRole!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.white.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        userRole!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            
+            // Divider
+            Divider(height: 1, thickness: 1, color: AppColors.border),
+            
+            // Menu Items
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                children: [
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.account_circle_outlined,
+                    title: 'My Profile',
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: Navigate to profile page
+                    },
+                  ),
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.settings_outlined,
+                    title: 'Settings',
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: Navigate to settings
+                    },
+                  ),
+                  Divider(height: 1, thickness: 1, color: AppColors.border),
+                  _buildMenuItem(
+                    context: context,
+                    icon: Icons.logout,
+                    title: 'Logout',
+                    titleColor: AppColors.error,
+                    iconColor: AppColors.error,
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (onLogout != null) {
+                        onLogout!();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? titleColor,
+    Color? iconColor,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: iconColor ?? AppColors.textSecondary,
+                size: 22,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: titleColor ?? AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.textTertiary,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

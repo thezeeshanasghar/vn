@@ -4,9 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/services/supplier_service.dart';
 import '../core/services/brand_service.dart';
 import '../core/services/bill_service.dart';
+import '../core/services/clinic_service.dart';
 
 class ArrivalsScreen extends StatefulWidget {
-  const ArrivalsScreen({super.key});
+  final VoidCallback? onSaved;
+  const ArrivalsScreen({super.key, this.onSaved});
 
   @override
   State<ArrivalsScreen> createState() => _ArrivalsScreenState();
@@ -14,9 +16,11 @@ class ArrivalsScreen extends StatefulWidget {
 
 class _ArrivalsScreenState extends State<ArrivalsScreen> {
   int? _doctorId;
+  int? _clinicId;
   int? _supplierId;
   DateTime _date = DateTime.now();
   List<Map<String, dynamic>> _suppliers = [];
+  List<Map<String, dynamic>> _clinics = [];
   List<Map<String, dynamic>> _brands = [];
   final List<_Line> _lines = [ _Line() ];
   bool _loading = true;
@@ -37,10 +41,12 @@ class _ArrivalsScreenState extends State<ArrivalsScreen> {
       final doc = json.decode(docStr) as Map<String, dynamic>;
       final doctorId = (doc['doctorId'] as num).toInt();
       final supp = await SupplierService.list(doctorId);
+      final clinics = await ClinicService.getClinicsByDoctor(doctorId);
       final br = await BrandService.list();
       setState(() {
         _doctorId = doctorId;
         _suppliers = supp;
+        _clinics = clinics;
         _brands = br;
         _loading = false;
       });
@@ -155,10 +161,16 @@ class _ArrivalsScreenState extends State<ArrivalsScreen> {
       builder: (context, constraints) {
         if (constraints.maxWidth > 600) {
           // Desktop/Tablet layout
-          return Row(
+          return Column(
             children: [
-              Expanded(child: _buildSupplierDropdown()),
-              const SizedBox(width: 16),
+              Row(
+                children: [
+                  Expanded(child: _buildClinicDropdown()),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildSupplierDropdown()),
+                ],
+              ),
+              const SizedBox(height: 16),
               _buildDatePicker(),
             ],
           );
@@ -166,6 +178,8 @@ class _ArrivalsScreenState extends State<ArrivalsScreen> {
           // Mobile layout
           return Column(
             children: [
+              _buildClinicDropdown(),
+              const SizedBox(height: 16),
               _buildSupplierDropdown(),
               const SizedBox(height: 16),
               _buildDatePicker(),
@@ -173,6 +187,28 @@ class _ArrivalsScreenState extends State<ArrivalsScreen> {
           );
         }
       },
+    );
+  }
+
+  Widget _buildClinicDropdown() {
+    return DropdownButtonFormField<int>(
+      value: _clinicId,
+      decoration: InputDecoration(
+        labelText: 'Clinic',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      items: _clinics.map<DropdownMenuItem<int>>((c) {
+        final id = (c['clinicId'] as num?)?.toInt() ?? 0;
+        final name = (c['name'] ?? '') as String;
+        return DropdownMenuItem<int>(
+          value: id,
+          child: Text(name),
+        );
+      }).toList(),
+      onChanged: (v) => setState(() => _clinicId = v),
     );
   }
 
@@ -627,7 +663,7 @@ class _ArrivalsScreenState extends State<ArrivalsScreen> {
     setState(() => _saving = true);
     try {
       final lines = _lines.map((l) => {'brandId': l.brandId, 'quantity': l.quantity}).toList();
-      await BillService.create(doctorId: _doctorId!, supplierId: _supplierId!, date: _date, lines: lines, paid: _paid);
+      await BillService.create(doctorId: _doctorId!, clinicId: _clinicId, supplierId: _supplierId!, date: _date, lines: lines, paid: _paid);
       if (mounted) {
         setState(() {
           _lines..clear()..add(_Line());
@@ -639,6 +675,10 @@ class _ArrivalsScreenState extends State<ArrivalsScreen> {
             backgroundColor: Colors.green,
           ),
         );
+        // Trigger callback to refresh inventory
+        if (widget.onSaved != null) {
+          widget.onSaved!();
+        }
       }
     } catch (e) {
       if (mounted) {
