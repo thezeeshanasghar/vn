@@ -56,10 +56,12 @@ class PatientScheduleService {
   /// Toggle IsDone status for a specific patient dose
   /// When setting to true, also sets givenDate to current date (date only, YYYY-MM-DD) if not already set
   /// When setting to false, clears the givenDate
+  /// brandId is required when marking as done (isDone = true)
   static Future<PatientSchedule> toggleIsDone(
     int scheduleId,
-    bool isDone,
-  ) async {
+    bool isDone, {
+    int? brandId,
+  }) async {
     final updates = <String, dynamic>{'IsDone': isDone};
     
     // If marking as done and givenDate is null, set it to current date (date only)
@@ -67,9 +69,15 @@ class PatientScheduleService {
       final now = DateTime.now();
       final dateOnly = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       updates['givenDate'] = dateOnly;
+      
+      // BrandId is required when marking as done
+      if (brandId != null) {
+        updates['brandId'] = brandId;
+      }
     } else {
-      // If marking as undone, clear the givenDate
+      // If marking as undone, clear the givenDate but keep brandId
       updates['givenDate'] = null;
+      // Note: We keep the brandId so inventory can be restored when undoing
     }
     
     return await updateSchedule(scheduleId, updates);

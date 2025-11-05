@@ -7,11 +7,61 @@ import '../core/controllers/auth_controller.dart';
 import '../core/controllers/clinic_controller.dart';
 import '../core/router/app_routes.dart';
 import '../models/clinic.dart';
+import '../services/dashboard_service.dart';
+import '../core/widgets/loading_widget.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   final List<Clinic>? clinics;
   
   const DashboardScreen({super.key, this.clinics});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final AuthController _authController = Get.find<AuthController>();
+  bool _isLoading = true;
+  Map<String, int> _stats = {
+    'totalPatients': 0,
+    'totalSchedules': 0,
+    'completedSchedules': 0,
+    'pendingSchedules': 0,
+    'todaySchedules': 0,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    final doctor = _authController.currentDoctor.value;
+    if (doctor == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final stats = await DashboardService.getDashboardStats(doctor.doctorId);
+      setState(() {
+        _stats = stats;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading dashboard data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +69,10 @@ class DashboardScreen extends StatelessWidget {
     final ClinicController clinicController = Get.find<ClinicController>();
     final doctor = authController.currentDoctor.value;
     final hasClinics = clinicController.clinics.isNotEmpty;
+
+    if (_isLoading) {
+      return const LoadingWidget(message: 'Loading dashboard...');
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -36,8 +90,6 @@ class DashboardScreen extends StatelessWidget {
                 _buildStatsOverview(),
                 const SizedBox(height: 20),
                 _buildClinicStatusCard(hasClinics),
-                const SizedBox(height: 20),
-                _buildRecentActivity(),
                 const SizedBox(height: 100), // Bottom padding
               ]),
             ),
@@ -388,12 +440,22 @@ class DashboardScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Today\'s Overview',
-          style: AppTextStyles.h4.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Statistics Overview',
+              style: AppTextStyles.h4.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadDashboardData,
+              tooltip: 'Refresh',
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         Row(
@@ -401,24 +463,20 @@ class DashboardScreen extends StatelessWidget {
             Expanded(
               child: _buildStatCard(
                 icon: Icons.people_outline,
-                title: 'Patients',
-                value: '24',
-                subtitle: 'Today',
+                title: 'Total Patients',
+                value: '${_stats['totalPatients'] ?? 0}',
+                subtitle: 'Registered',
                 color: AppColors.primary,
-                trend: '+12%',
-                isPositive: true,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _buildStatCard(
                 icon: Icons.event_outlined,
-                title: 'Appointments',
-                value: '8',
+                title: 'Today\'s Schedules',
+                value: '${_stats['todaySchedules'] ?? 0}',
                 subtitle: 'Scheduled',
                 color: AppColors.secondary,
-                trend: '+3',
-                isPositive: true,
               ),
             ),
           ],
@@ -428,28 +486,33 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Expanded(
               child: _buildStatCard(
-                icon: Icons.timer_outlined,
-                title: 'Wait Time',
-                value: '15m',
-                subtitle: 'Average',
-                color: AppColors.accent,
-                trend: '-5m',
-                isPositive: true,
+                icon: Icons.check_circle_outline,
+                title: 'Completed',
+                value: '${_stats['completedSchedules'] ?? 0}',
+                subtitle: 'Doses Given',
+                color: AppColors.success,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _buildStatCard(
-                icon: Icons.star_outline,
-                title: 'Rating',
-                value: '4.8',
-                subtitle: 'Patient',
-                color: AppColors.success,
-                trend: '+0.2',
-                isPositive: true,
+                icon: Icons.pending_outlined,
+                title: 'Pending',
+                value: '${_stats['pendingSchedules'] ?? 0}',
+                subtitle: 'Doses Remaining',
+                color: AppColors.warning,
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        _buildStatCard(
+          icon: Icons.medical_services_outlined,
+          title: 'Total Schedules',
+          value: '${_stats['totalSchedules'] ?? 0}',
+          subtitle: 'All Vaccination Doses',
+          color: AppColors.accent,
+          isFullWidth: true,
         ),
       ],
     );
@@ -461,8 +524,7 @@ class DashboardScreen extends StatelessWidget {
     required String value,
     required String subtitle,
     required Color color,
-    required String trend,
-    required bool isPositive,
+    bool isFullWidth = false,
   }) {
     return AppCard(
       padding: const EdgeInsets.all(16),
@@ -472,33 +534,24 @@ class DashboardScreen extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, size: 20, color: color),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isPositive 
-                      ? AppColors.success.withValues(alpha: 0.1)
-                      : AppColors.error.withValues(alpha: 0.1),
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withValues(alpha: 0.2),
+                      color.withValues(alpha: 0.1),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  trend,
-                  style: AppTextStyles.caption.copyWith(
-                    color: isPositive ? AppColors.success : AppColors.error,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: Icon(icon, size: 24, color: color),
               ),
+              if (!isFullWidth) const Spacer(),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             value,
             style: AppTextStyles.h2.copyWith(
@@ -509,15 +562,16 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             title,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 2),
           Text(
             subtitle,
             style: AppTextStyles.caption.copyWith(
-              color: AppColors.textTertiary,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -670,108 +724,6 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentActivity() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Recent Activity',
-              style: AppTextStyles.h4.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {},
-              child: Text(
-                'View All',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        AppCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _buildActivityItem(
-                icon: Icons.person_add,
-                title: 'New patient registered',
-                subtitle: 'Sarah Johnson - 2 hours ago',
-                color: AppColors.success,
-              ),
-              const Divider(height: 1),
-              _buildActivityItem(
-                icon: Icons.event,
-                title: 'Appointment completed',
-                subtitle: 'John Smith - 3 hours ago',
-                color: AppColors.primary,
-              ),
-              const Divider(height: 1),
-              _buildActivityItem(
-                icon: Icons.medical_information,
-                title: 'Medical record updated',
-                subtitle: 'Emma Wilson - 5 hours ago',
-                color: AppColors.accent,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActivityItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 20, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   String _getGreeting() {
     final hour = DateTime.now().hour;

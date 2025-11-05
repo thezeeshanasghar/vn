@@ -14,6 +14,7 @@ import 'dashboard_screen.dart';
 import 'coming_soon_screen.dart';
 import 'doctor_schedule_screen.dart';
 import 'patient_list_screen.dart';
+import 'inventory_screen.dart';
 import '../widgets/sidebar.dart';
 
 class MainScreen extends StatefulWidget {
@@ -77,12 +78,14 @@ class _MainScreenState extends State<MainScreen> {
       case 3:
         return const DoctorScheduleScreen();
       case 4:
-        return const ComingSoonScreen(title: 'Appointments');
+        return const InventoryScreen();
       case 5:
-        return const ComingSoonScreen(title: 'Medical Records');
+        return const ComingSoonScreen(title: 'Appointments');
       case 6:
-        return const ComingSoonScreen(title: 'Settings');
+        return const ComingSoonScreen(title: 'Medical Records');
       case 7:
+        return const ComingSoonScreen(title: 'Settings');
+      case 8:
         return const ComingSoonScreen(title: 'Help & Support');
       default:
         return DashboardScreen(clinics: _clinicController.clinics);
@@ -257,7 +260,9 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
         appBar: AppAppBarWithUser(
           title: _getPageTitle(),
-          userName: _authController.currentDoctor.value?.lastName,
+          userName: _authController.currentDoctor.value?.firstName != null
+              ? 'Dr. ${_authController.currentDoctor.value!.firstName} ${_authController.currentDoctor.value!.lastName}'
+              : null,
           userRole: _authController.currentDoctor.value?.type,
           onLogout: () => _authController.logout(),
         ),
@@ -283,10 +288,11 @@ class _MainScreenState extends State<MainScreen> {
       case 1: return 'My Clinic';
       case 2: return 'Patients';
       case 3: return 'Doctor Schedule';
-      case 4: return 'Appointments';
-      case 5: return 'Medical Records';
-      case 6: return 'Settings';
-      case 7: return 'Help & Support';
+      case 4: return 'Brand Inventory';
+      case 5: return 'Appointments';
+      case 6: return 'Medical Records';
+      case 7: return 'Settings';
+      case 8: return 'Help & Support';
       default: return 'Dashboard';
     }
   }

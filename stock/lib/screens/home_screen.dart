@@ -6,6 +6,7 @@ import 'dart:convert';
 import '../core/router/app_routes.dart';
 import 'arrivals_screen.dart';
 import 'bills_screen.dart';
+import 'inventory_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _statsLoading = true;
   int _supplierCount = 0;
   Map<String, dynamic>? _recentSupplier;
+  int _inventoryRefreshKey = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +30,16 @@ class _HomeScreenState extends State<HomeScreen> {
       body: _selected == 1 
           ? const SuppliersScreen() 
           : _selected == 2 
-          ? const ArrivalsScreen() 
+          ? ArrivalsScreen(onSaved: () {
+              // Refresh inventory when arrivals are saved
+              setState(() {
+                _inventoryRefreshKey++;
+              });
+            })
           : _selected == 3 
           ? const BillsScreen() 
+          : _selected == 4
+          ? InventoryScreen(key: ValueKey(_inventoryRefreshKey))
           : _buildDashboard(),
     );
   }
@@ -62,6 +71,11 @@ class _HomeScreenState extends State<HomeScreen> {
               index: 3,
               icon: Icons.receipt_long_outlined,
               title: 'Bills',
+            ),
+            _buildDrawerItem(
+              index: 4,
+              icon: Icons.warehouse_outlined,
+              title: 'Inventory',
             ),
             const Spacer(),
             const Divider(),

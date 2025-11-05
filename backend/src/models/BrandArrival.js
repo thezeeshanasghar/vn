@@ -4,12 +4,16 @@ const BrandArrivalSchema = new mongoose.Schema(
   {
     arrivalId: { type: Number, unique: true, index: true },
     billId: { type: Number, required: true, index: true },
+    clinicId: { type: Number, index: true, sparse: true, default: null },
     brandId: { type: Number, required: true, index: true },
     quantity: { type: Number, required: true },
     unitPrice: { type: Number, required: true },
     lineTotal: { type: Number, required: true },
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    minimize: false // Don't omit fields with null/undefined values
+  }
 );
 
 BrandArrivalSchema.pre('save', async function (next) {
