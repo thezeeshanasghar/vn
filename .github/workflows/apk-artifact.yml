@@ -1,60 +1,203 @@
-name: Deploy to EC2
+name: Build Flutter APK Artifacts
 
 on:
   push:
-    branches: [master]
-  workflow_dispatch: # Allows manual trigger
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
 
 jobs:
-  deploy:
+  build-apks:
     runs-on: ubuntu-latest
     
     steps:
+      # Checkout code from repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Configure SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key.pem
-          chmod 600 ~/.ssh/deploy_key.pem
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      # Setup Java 17 (LTS) - required for Jetifier compatibility
+      # Ubuntu runners come with Java 24 by default, which Jetifier doesn't support
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Deploy to EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
+      # Clear Gradle cache immediately after Java setup to remove any Java 24 artifacts
+      - name: Clear Gradle cache (pre-Flutter)
         run: |
-          ssh -i ~/.ssh/deploy_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # Navigate to application directory
-            cd ${{ secrets.APP_DIRECTORY }}
-            
-            # Pull latest code
-            git pull origin ${{ github.ref_name }}
-            
-            # Stop existing containers
-            docker-compose down
-            
-            # Remove old images (optional, to save disk space)
-            docker system prune -f
-            
-            # Build and start containers
-            docker-compose up -d --build
-            
-            # Show running containers
-            docker-compose ps
-            
-            echo "Deployment completed successfully!"
-          EOF
+          echo "Clearing Gradle cache to remove Java 24 artifacts..."
+          rm -rf ~/.gradle/caches/
+          rm -rf ~/.gradle/daemon/
+          echo "Gradle cache cleared"
+      # Setup Flutter 3.35.7 (stable) for all apps
+      - name: Setup Flutter (3.35.7)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.7'
+          channel: 'stable'
+          cache: true
 
-      - name: Verify deployment
+      # Verify Java and Flutter installation
+      - name: Verify Java and Flutter installation
         run: |
-          echo "Waiting for services to start..."
-          sleep 10
+          java -version
+          echo "JAVA_HOME: $JAVA_HOME"
+          echo "---"
+          flutter --version
+          flutter doctor -v
+      # Ensure Android platform exists for admin app (idempotent)
+      - name: Ensure Android platform for admin app
+        working-directory: ./admin
+        run: |
+          flutter create --platforms=android .
+      # Ensure Android platform exists for doctor app (idempotent)
+      - name: Ensure Android platform for doctor app
+        working-directory: ./doctor
+        run: |
+          flutter create --platforms=android .
+      # Ensure Android platform exists for stock app (idempotent)
+      - name: Ensure Android platform for stock app
+        working-directory: ./stock
+        run: |
+          flutter create --platforms=android .
+      # Ensure compileSdk is 34 for admin/doctor (Groovy) and patient/stock (Kotlin DSL)
+      - name: Set compileSdkVersion to 34 for all apps
+        run: |
+          # admin (Groovy)
+          if [ -f admin/android/app/build.gradle ]; then
+            sed -i 's/compileSdkVersion [0-9]\+/compileSdkVersion 34/' admin/android/app/build.gradle || true
+          fi
+          # doctor (Groovy)
+          if [ -f doctor/android/app/build.gradle ]; then
+            sed -i 's/compileSdkVersion [0-9]\+/compileSdkVersion 34/' doctor/android/app/build.gradle || true
+          fi
+          # patient (Kotlin DSL)
+          if [ -f patient/android/app/build.gradle.kts ]; then
+            sed -i 's/compileSdk *= *[0-9]\+/compileSdk = 34/' patient/android/app/build.gradle.kts || true
+          fi
+          # stock (Kotlin DSL)
+          if [ -f stock/android/app/build.gradle.kts ]; then
+            sed -i 's/compileSdk *= *[0-9]\+/compileSdk = 34/' stock/android/app/build.gradle.kts || true
+          fi
+      # Install dependencies for admin app
+      - name: Install admin app dependencies
+        working-directory: ./admin
+        run: |
+          flutter pub get
+      # Install dependencies for doctor app
+      - name: Install doctor app dependencies
+        working-directory: ./doctor
+        run: |
+          flutter pub get
+      # Install dependencies for patient app
+      - name: Install patient app dependencies
+        working-directory: ./patient
+        run: |
+          flutter pub get
+      # Install dependencies for stock app
+      - name: Install stock app dependencies
+        working-directory: ./stock
+        run: |
+          flutter pub get
+      # Temporarily disable Jetifier and skip lint tasks to avoid Java 24 bytecode issues
+      # Jetifier cannot process JARs compiled with Java 24 (class file major version 68)
+      - name: Configure admin app Gradle properties
+        run: |
+          if [ -f admin/android/gradle.properties ]; then
+            # Backup original file
+            cp admin/android/gradle.properties admin/android/gradle.properties.bak
+            # Disable Jetifier to avoid Java 24 bytecode transformation issues
+            sed -i 's/android.enableJetifier=true/android.enableJetifier=false/' admin/android/gradle.properties
+            # Add property to skip lint model generation (not needed for APK)
+            if ! grep -q "android.lint.checkReleaseBuilds=false" admin/android/gradle.properties; then
+              echo "android.lint.checkReleaseBuilds=false" >> admin/android/gradle.properties
+            fi
+            echo "Gradle properties configured for admin app:"
+            cat admin/android/gradle.properties
+          fi
+      # Stop all Gradle daemons and clear cache before build
+      - name: Reset Gradle environment before build
+        run: |
+          echo "Stopping all Gradle daemons..."
+          # Stop daemons if gradlew exists
+          if [ -f admin/android/gradlew ]; then
+            cd admin/android && ./gradlew --stop 2>/dev/null || true
+            cd ../..
+          fi
+          if [ -f doctor/android/gradlew ]; then
+            cd doctor/android && ./gradlew --stop 2>/dev/null || true
+            cd ../..
+          fi
+          if [ -f patient/android/gradlew ]; then
+            cd patient/android && ./gradlew --stop 2>/dev/null || true
+            cd ../..
+          fi
+          if [ -f stock/android/gradlew ]; then
+            cd stock/android && ./gradlew --stop 2>/dev/null || true
+            cd ../..
+          fi
+          # Clear entire Gradle cache again to ensure clean state
+          echo "Clearing Gradle cache..."
+          rm -rf ~/.gradle/caches/
+          rm -rf ~/.gradle/daemon/
+          echo "Gradle environment reset complete"
           
-          # Check if backend is running
-          ssh -i ~/.ssh/deploy_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-            "docker exec vaccine-backend node -e \"require('http').get('http://localhost:3000/api/health', (res) => { console.log('Backend Health:', res.statusCode === 200 ? 'OK' : 'FAILED'); process.exit(res.statusCode === 200 ? 0 : 1) })\""
-          
-          echo "✅ All services are running!"
-
+      # Build unsigned release APK for admin app
+      - name: Build admin release APK
+        working-directory: ./admin
+        run: |
+          # Verify Java version before build
+          echo "=== Java Environment ==="
+          java -version
+          echo "JAVA_HOME: $JAVA_HOME"
+          which java
+          echo "========================"
+          # Set JAVA_HOME explicitly to ensure Gradle uses Java 17
+          export JAVA_HOME="$JAVA_HOME"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          # Verify Gradle will use the correct Java
+          cd android && ./gradlew --version || true
+          cd ..
+          # Build APK - Jetifier disabled via gradle.properties
+          # If build fails, try skipping lint tasks directly
+          flutter build apk --release --no-tree-shake-icons || \
+          (echo "Flutter build failed, trying with lint tasks excluded..." && \
+           cd android && \
+           ./gradlew assembleRelease \
+             -x generateReleaseLintModel \
+             -x lintVitalRelease \
+             -x lint \
+             -Pandroid.lint.checkReleaseBuilds=false && \
+           cd ..)
+      # Build unsigned release APK for doctor app
+      - name: Build doctor release APK
+        working-directory: ./doctor
+        run: |
+          flutter build apk --release --no-tree-shake-icons
+      # Build unsigned release APK for patient app
+      - name: Build patient release APK
+        working-directory: ./patient
+        run: |
+          flutter build apk --release --no-tree-shake-icons
+      # Build unsigned release APK for stock app
+      - name: Build stock release APK
+        working-directory: ./stock
+        run: |
+          flutter build apk --release --no-tree-shake-icons
+      # Package all APKs into build_outputs folder
+      - name: Package APK artifacts
+        run: |
+          mkdir -p build_outputs
+          cp admin/build/app/outputs/flutter-apk/app-release.apk build_outputs/Admin.apk
+          cp doctor/build/app/outputs/flutter-apk/app-release.apk build_outputs/Doctor.apk
+          cp patient/build/app/outputs/flutter-apk/app-release.apk build_outputs/Patient.apk
+          cp stock/build/app/outputs/flutter-apk/app-release.apk build_outputs/Stock.apk
+          ls -lh build_outputs/
+      # Upload all APKs as a single artifact named release-apks
+      - name: Upload release APKs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apks
+          path: build_outputs/
+          retention-days: 7
