@@ -3,6 +3,8 @@ const router = express.Router();
 const Patient = require('../models/Patient');
 const DoctorSchedule = require('../models/DoctorSchedule');
 const PatientSchedule = require('../models/PatientSchedule');
+const PersonalAssistant = require('../models/PersonalAssistant');
+const PaAccess = require('../models/PaAccess');
 
 // GET /api/patients - list with optional filters: doctorId, clinicId, isActive, search
 router.get('/', async (req, res) => {
@@ -20,6 +22,79 @@ router.get('/', async (req, res) => {
     res.status(200).json({ success: true, count: patients.length, data: patients });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/patients/by-pa/:paId - list patients accessible to a personal assistant
+router.get('/by-pa/:paId', async (req, res) => {
+  try {
+    const paId = Number(req.params.paId);
+    if (!paId) {
+      return res.status(400).json({ success: false, message: 'Invalid paId' });
+    }
+
+    const assistant = await PersonalAssistant.findOne({ paId, isActive: true });
+    if (!assistant) {
+      return res.status(404).json({ success: false, message: 'Personal assistant not found' });
+    }
+
+    if (!assistant.permissions?.allowPatients) {
+      return res.status(403).json({ success: false, message: 'Access denied for patients module' });
+    }
+
+    const accessRows = await PaAccess.find({
+      paId,
+      allowPatients: true
+    }).lean();
+
+    if (!accessRows.length) {
+      return res.status(200).json({ success: true, count: 0, data: [] });
+    }
+
+    const clinicIds = accessRows.map((row) => row.clinicId);
+
+    const { clinicId, search, isActive } = req.query;
+
+    let filteredClinicIds = clinicIds;
+    if (clinicId) {
+      const numericClinicId = Number(clinicId);
+      if (!Number.isNaN(numericClinicId) && clinicIds.includes(numericClinicId)) {
+        filteredClinicIds = [numericClinicId];
+      } else {
+        filteredClinicIds = [];
+      }
+    }
+
+    if (!filteredClinicIds.length) {
+      return res.status(200).json({ success: true, count: 0, data: [] });
+    }
+
+    const query = {
+      doctorId: assistant.doctorId,
+      clinicId: { $in: filteredClinicIds }
+    };
+
+    if (typeof isActive !== 'undefined') {
+      query.isActive = isActive === 'true';
+    }
+
+    if (search) {
+      const rx = new RegExp(search, 'i');
+      query.$or = [
+        { name: rx },
+        { fatherName: rx },
+        { email: rx },
+        { cnic: rx },
+        { mobileNumber: rx }
+      ];
+    }
+
+    const patients = await Patient.find(query).sort({ createdAt: -1 });
+
+    return res.status(200).json({ success: true, count: patients.length, data: patients });
+  } catch (error) {
+    console.error('List patients for PA error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to fetch patients' });
   }
 });
 

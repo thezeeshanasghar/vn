@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/clinic_controller.dart';
+import '../controllers/personal_assistant_controller.dart';
 import '../../screens/login_screen.dart';
 import '../../screens/main_screen.dart';
 import '../../screens/dashboard_screen.dart';
@@ -20,6 +21,7 @@ class AppPages {
       page: () => const MainScreen(),
       binding: BindingsBuilder(() {
         Get.put(ClinicController());
+        Get.put(PersonalAssistantController());
       }),
     ),
     GetPage(

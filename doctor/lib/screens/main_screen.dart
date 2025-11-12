@@ -15,6 +15,7 @@ import 'coming_soon_screen.dart';
 import 'doctor_schedule_screen.dart';
 import 'patient_list_screen.dart';
 import 'inventory_screen.dart';
+import 'personal_assistant_screen.dart';
 import '../widgets/sidebar.dart';
 
 class MainScreen extends StatefulWidget {
@@ -80,12 +81,14 @@ class _MainScreenState extends State<MainScreen> {
       case 4:
         return const InventoryScreen();
       case 5:
-        return const ComingSoonScreen(title: 'Appointments');
+        return const PersonalAssistantScreen();
       case 6:
-        return const ComingSoonScreen(title: 'Medical Records');
+        return const ComingSoonScreen(title: 'Appointments');
       case 7:
-        return const ComingSoonScreen(title: 'Settings');
+        return const ComingSoonScreen(title: 'Medical Records');
       case 8:
+        return const ComingSoonScreen(title: 'Settings');
+      case 9:
         return const ComingSoonScreen(title: 'Help & Support');
       default:
         return DashboardScreen(clinics: _clinicController.clinics);
@@ -289,10 +292,11 @@ class _MainScreenState extends State<MainScreen> {
       case 2: return 'Patients';
       case 3: return 'Doctor Schedule';
       case 4: return 'Brand Inventory';
-      case 5: return 'Appointments';
-      case 6: return 'Medical Records';
-      case 7: return 'Settings';
-      case 8: return 'Help & Support';
+      case 5: return 'Personal Assistants';
+      case 6: return 'Appointments';
+      case 7: return 'Medical Records';
+      case 8: return 'Settings';
+      case 9: return 'Help & Support';
       default: return 'Dashboard';
     }
   }
