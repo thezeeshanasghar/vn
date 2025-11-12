@@ -20,6 +20,8 @@ const supplierRoutes = require('./routes/supplierRoutes');
 const billRoutes = require('./routes/billRoutes');
 const clinicInventoryRoutes = require('./routes/clinicInventoryRoutes');
 const clinicBrandPriceRoutes = require('./routes/clinicBrandPriceRoutes');
+const personalAssistantRoutes = require('./routes/personalAssistantRoutes');
+const paAuthRoutes = require('./routes/paAuthRoutes');
 
 // Load environment variables
 require('dotenv').config({ path: path.join(__dirname, '..', 'config.env') });
@@ -83,6 +85,8 @@ app.use('/api/suppliers', supplierRoutes);
 app.use('/api/bills', billRoutes);
 app.use('/api/clinic-inventory', clinicInventoryRoutes);
 app.use('/api/clinic-brand-price', clinicBrandPriceRoutes);
+app.use('/api/personal-assistants', personalAssistantRoutes);
+app.use('/api/pa-auth', paAuthRoutes);
 
 /**
  * @swagger
