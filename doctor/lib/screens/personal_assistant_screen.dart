@@ -112,6 +112,115 @@ Map<String, bool> _emptyPermissionFlags() {
   };
 }
 
+void _pruneClinicSelections(
+  Set<int> selectedClinics,
+  Map<String, Set<int>> moduleSelections,
+  int clinicId,
+) {
+  if (selectedClinics.contains(clinicId)) return;
+  for (final module in _moduleSpecs) {
+    moduleSelections[module.field]?.remove(clinicId);
+  }
+}
+
+Widget _buildClinicSelectionSection({
+  required List<Clinic> clinics,
+  required Set<int> selectedClinicIds,
+  required Map<String, Set<int>> moduleSelections,
+  required void Function(void Function()) updateState,
+}) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: AppColors.grey50,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: AppColors.grey200),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.local_hospital_outlined, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Clinic Access',
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            if (clinics.isNotEmpty) ...[
+              TextButton.icon(
+                onPressed: () {
+                  updateState(() {
+                    selectedClinicIds
+                      ..clear()
+                      ..addAll(clinics.map((clinic) => clinic.clinicId));
+                  });
+                },
+                icon: const Icon(Icons.done_all, size: 18),
+                label: const Text('Select All'),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  updateState(() {
+                    selectedClinicIds.clear();
+                    for (final module in _moduleSpecs) {
+                      moduleSelections[module.field]?.clear();
+                    }
+                  });
+                },
+                icon: const Icon(Icons.clear_all, size: 18),
+                label: const Text('Clear'),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (clinics.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'No clinics available yet. Create a clinic first.',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
+            ),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: clinics.map((clinic) {
+              final isSelected = selectedClinicIds.contains(clinic.clinicId);
+              return FilterChip(
+                label: Text(clinic.name),
+                selected: isSelected,
+                onSelected: (value) {
+                  updateState(() {
+                    if (value) {
+                      selectedClinicIds.add(clinic.clinicId);
+                    } else {
+                      selectedClinicIds.remove(clinic.clinicId);
+                      _pruneClinicSelections(selectedClinicIds, moduleSelections, clinic.clinicId);
+                    }
+                  });
+                },
+                selectedColor: AppColors.primary.withOpacity(0.18),
+                checkmarkColor: AppColors.primary,
+              );
+            }).toList(),
+          ),
+      ],
+    ),
+  );
+}
+
 class PersonalAssistantScreen extends StatefulWidget {
   const PersonalAssistantScreen({super.key});
 
@@ -134,6 +243,8 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
   final Map<String, Set<int>> _createModuleClinicSelections = {
     for (final module in _moduleSpecs) module.field: <int>{},
   };
+
+  final Set<int> _createClinicSelections = <int>{};
 
   PersonalAssistantController get _paController => Get.find<PersonalAssistantController>();
   ClinicController get _clinicController => Get.find<ClinicController>();
@@ -163,6 +274,7 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
       _createModuleToggles[module.field] = false;
       _createModuleClinicSelections[module.field] = <int>{};
     }
+  _createClinicSelections.clear();
   }
 
   bool _validateModuleSelections(Map<String, bool> toggles, Map<String, Set<int>> selections) {
@@ -215,15 +327,19 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
     }).toList();
   }
 
-  Widget _buildModuleAccessTile({
+Widget _buildModuleAccessTile({
     required _ModuleSpec module,
     required List<Clinic> clinics,
     required Map<String, bool> toggles,
     required Map<String, Set<int>> selections,
     required void Function(void Function()) updateState,
-  }) {
+  Set<int>? allowedClinicIds,
+}) {
     final isEnabled = toggles[module.field] ?? false;
     final selectedClinics = selections[module.field] ?? <int>{};
+  final filteredClinics = allowedClinicIds == null
+      ? clinics
+      : clinics.where((clinic) => allowedClinicIds.contains(clinic.clinicId)).toList();
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -286,7 +402,7 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
           ),
           if (isEnabled) ...[
             const SizedBox(height: 14),
-            if (clinics.isEmpty)
+            if (filteredClinics.isEmpty)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
@@ -295,7 +411,9 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'No clinics available yet. Create a clinic to assign access.',
+                  allowedClinicIds == null
+                      ? 'No clinics available yet. Create a clinic to assign access.'
+                      : 'Select clinics in the section above before granting ${module.label} access.',
                   style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
                 ),
               )
@@ -303,7 +421,7 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: clinics.map((clinic) {
+                children: filteredClinics.map((clinic) {
                   final isSelected = selectedClinics.contains(clinic.clinicId);
                   return FilterChip(
                     label: Text(clinic.name),
@@ -341,6 +459,17 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
         snackPosition: SnackPosition.TOP,
         backgroundColor: AppColors.warning.withOpacity(0.15),
         colorText: AppColors.warning,
+      );
+      return;
+    }
+
+    if (_createClinicSelections.isEmpty) {
+      Get.snackbar(
+        'Select clinics',
+        'Pick at least one clinic to map your assistant to.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: AppColors.error.withOpacity(0.1),
+        colorText: AppColors.error,
       );
       return;
     }
@@ -418,6 +547,9 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
             .map((access) => access.clinicId)
             .toSet(),
     };
+    final Set<int> selectedClinics = assistant.clinicAccess
+        .map((access) => access.clinicId)
+        .toSet();
 
     await showDialog<void>(
       context: context,
@@ -445,15 +577,25 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: _moduleSpecs
-                        .map((module) => _buildModuleAccessTile(
-                              module: module,
-                              clinics: clinics,
-                              toggles: moduleToggles,
-                              selections: moduleClinicSelections,
-                              updateState: setState,
-                            ))
-                        .toList(),
+                    children: [
+                      _buildClinicSelectionSection(
+                        clinics: clinics,
+                        selectedClinicIds: selectedClinics,
+                        moduleSelections: moduleClinicSelections,
+                        updateState: setState,
+                      ),
+                      const SizedBox(height: 16),
+                      ..._moduleSpecs.map(
+                        (module) => _buildModuleAccessTile(
+                          module: module,
+                          clinics: clinics,
+                          toggles: moduleToggles,
+                          selections: moduleClinicSelections,
+                          updateState: setState,
+                          allowedClinicIds: selectedClinics,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -631,8 +773,15 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildClinicSelectionSection(
+                    clinics: clinics,
+                    selectedClinicIds: _createClinicSelections,
+                    moduleSelections: _createModuleClinicSelections,
+                    updateState: setState,
+                  ),
+                  const SizedBox(height: 20),
                   Text(
-                    'Module Access & Clinics',
+                    'Module Access',
                     style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
@@ -651,6 +800,7 @@ class _PersonalAssistantScreenState extends State<PersonalAssistantScreen> {
                       toggles: _createModuleToggles,
                       selections: _createModuleClinicSelections,
                       updateState: setState,
+                      allowedClinicIds: _createClinicSelections,
                     );
                   }).toList(),
                 ],
