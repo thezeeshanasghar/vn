@@ -274,7 +274,7 @@ MIIEpAIBAAKCAQEAp+uG1c+J12fgCQgF37+MwWDPMYDF8ahClH...
 ### Deployment Configuration
 
 **Target EC2:**
-- **Host:** `ec2-13-232-35-109.ap-south-1.compute.amazonaws.com`
+- **Host:** `15.206.122.138`
 - **User:** `ec2-user`
 - **Directory:** `/home/ec2-user/vn`
 
@@ -321,7 +321,7 @@ MIIEpAIBAAKCAQEAp+uG1c+J12fgCQgF37+MwWDPMYDF8ahClH...
 
 **View on EC2:**
 ```bash
-ssh -i key.pem ec2-user@ec2-13-232-35-109.ap-south-1.compute.amazonaws.com
+ssh -i key.pem ec2-user@15.206.122.138
 
 # Check running containers
 docker-compose ps
@@ -342,14 +342,14 @@ docker-compose logs -f doctor-portal
 
 | Application | URL |
 |-------------|-----|
-| **Admin System** | http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8081 |
-| **Doctor Portal** | http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8082 |
-| **Patient Panel** | http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8083 |
-| **PA Portal** | http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8084 |
-| **Stock Portal** | http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8085 |
-| **Mongo Express** | http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8086 |
-| **Backend API** | http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:3000 |
-| **API Documentation** | http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:3000/api-docs |
+| **Admin System** | http://15.206.122.138:8081 |
+| **Doctor Portal** | http://15.206.122.138:8082 |
+| **Patient Panel** | http://15.206.122.138:8083 |
+| **PA Portal** | http://15.206.122.138:8084 |
+| **Stock Portal** | http://15.206.122.138:8085 |
+| **Mongo Express** | http://15.206.122.138:8086 |
+| **Backend API** | http://15.206.122.138:3000 |
+| **API Documentation** | http://15.206.122.138:3000/api-docs |
 
 ### Local Access (on EC2 instance):
 ```bash
@@ -490,19 +490,19 @@ docker-compose restart backend
 
 ```bash
 # Backend API
-curl http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:3000/api/health
+curl http://15.206.122.138:3000/api/health
 
 # Frontend health endpoints
-curl http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8081/health
-curl http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8084/health
-curl http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8085/health
+curl http://15.206.122.138:8081/health
+curl http://15.206.122.138:8084/health
+curl http://15.206.122.138:8085/health
 ```
 
 ### Manual Testing:
 
 ```bash
 # SSH into EC2
-ssh -i key.pem ec2-user@ec2-13-232-35-109.ap-south-1.compute.amazonaws.com
+ssh -i key.pem ec2-user@15.206.122.138
 
 # Test all services
 curl http://0.0.0.0:3000/api/health
@@ -541,7 +541,7 @@ After deployment, verify:
 # Go to GitHub → Actions → View failed workflow
 
 # Check EC2 logs
-ssh -i key.pem ec2-user@ec2-13-232-35-109.ap-south-1.compute.amazonaws.com
+ssh -i key.pem ec2-user@15.206.122.138
 cd /home/ec2-user/vn
 docker-compose logs -f
 ```
@@ -595,7 +595,7 @@ sudo usermod -a -G docker ec2-user
 
 # Logout and login again
 exit
-ssh -i key.pem ec2-user@ec2-13-232-35-109.ap-south-1.compute.amazonaws.com
+ssh -i key.pem ec2-user@15.206.122.138
 ```
 
 #### 6. **Git Pull Fails**
