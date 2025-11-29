@@ -8,7 +8,7 @@ import '../../models/vaccine.dart';
 class ApiService {
   // For Android emulator, use the host machine's IP address
   // For web browser, use localhost
-  static const String baseUrl = 'http://192.168.0.4:3000/api';
+  static const String baseUrl = 'http://localhost:3000/api';
 
   // Headers
   static Map<String, String> get _headers => {
