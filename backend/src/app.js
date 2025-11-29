@@ -158,18 +158,18 @@ app.use('*', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
-  console.log(`💉 Vaccines API: http://localhost:${PORT}/api/vaccines`);
-  console.log(`💊 Doses API: http://localhost:${PORT}/api/doses`);
-  console.log(`🏷️ Brands API: http://localhost:${PORT}/api/brands`);
-  console.log(`👨‍⚕️ Doctors API: http://localhost:${PORT}/api/doctors`);
-  console.log(`🔐 Auth API: http://localhost:${PORT}/api/auth`);
-  console.log(`🏥 Clinics API: http://localhost:${PORT}/api/clinics`);
-  console.log(`🧑‍🤝‍🧑 Patients API: http://localhost:${PORT}/api/patients`);
-  console.log(`📅 Doctor Schedules API: http://localhost:${PORT}/api/doctor-schedules`);
-  console.log(`📦 Suppliers API: http://localhost:${PORT}/api/suppliers`);
-  console.log(`🧾 Bills API: http://localhost:${PORT}/api/bills`);
+  console.log(`📊 Health check: http://0.0.0.0:${PORT}/api/health`);
+  console.log(`📚 API Documentation: http://0.0.0.0:${PORT}/api-docs`);
+  console.log(`💉 Vaccines API: http://0.0.0.0:${PORT}/api/vaccines`);
+  console.log(`💊 Doses API: http://0.0.0.0:${PORT}/api/doses`);
+  console.log(`🏷️ Brands API: http://0.0.0.0:${PORT}/api/brands`);
+  console.log(`👨‍⚕️ Doctors API: http://0.0.0.0:${PORT}/api/doctors`);
+  console.log(`🔐 Auth API: http://0.0.0.0:${PORT}/api/auth`);
+  console.log(`🏥 Clinics API: http://0.0.0.0:${PORT}/api/clinics`);
+  console.log(`🧑‍🤝‍🧑 Patients API: http://0.0.0.0:${PORT}/api/patients`);
+  console.log(`📅 Doctor Schedules API: http://0.0.0.0:${PORT}/api/doctor-schedules`);
+  console.log(`📦 Suppliers API: http://0.0.0.0:${PORT}/api/suppliers`);
+  console.log(`🧾 Bills API: http://0.0.0.0:${PORT}/api/bills`);
 });

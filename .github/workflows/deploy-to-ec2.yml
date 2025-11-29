@@ -1,0 +1,245 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'admin/**'
+      - 'doctor/**'
+      - 'patient/**'
+      - 'pa/**'
+      - 'stock/**'
+      - 'backend/**'
+      - 'docker-compose.yml'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Deploy to EC2 Server
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Fetch current and previous commit to detect changes
+
+      - name: Detect changed services
+        id: changes
+        run: |
+          echo "Detecting which services changed..."
+          
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          
+          # Initialize flags
+          REBUILD_ADMIN=false
+          REBUILD_DOCTOR=false
+          REBUILD_PATIENT=false
+          REBUILD_PA=false
+          REBUILD_STOCK=false
+          REBUILD_BACKEND=false
+          REBUILD_ALL=false
+          
+          # Check which services were modified
+          if echo "$CHANGED_FILES" | grep -q "^admin/"; then
+            REBUILD_ADMIN=true
+            echo "✅ Admin changed"
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "^doctor/"; then
+            REBUILD_DOCTOR=true
+            echo "✅ Doctor changed"
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "^patient/"; then
+            REBUILD_PATIENT=true
+            echo "✅ Patient changed"
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "^pa/"; then
+            REBUILD_PA=true
+            echo "✅ PA changed"
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "^stock/"; then
+            REBUILD_STOCK=true
+            echo "✅ Stock changed"
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "^backend/"; then
+            REBUILD_BACKEND=true
+            echo "✅ Backend changed"
+          fi
+          
+          # If docker-compose.yml changed, rebuild everything
+          if echo "$CHANGED_FILES" | grep -q "^docker-compose.yml"; then
+            REBUILD_ALL=true
+            echo "⚠️ Docker Compose changed - will rebuild all services"
+          fi
+          
+          # Export variables
+          echo "rebuild_admin=$REBUILD_ADMIN" >> $GITHUB_OUTPUT
+          echo "rebuild_doctor=$REBUILD_DOCTOR" >> $GITHUB_OUTPUT
+          echo "rebuild_patient=$REBUILD_PATIENT" >> $GITHUB_OUTPUT
+          echo "rebuild_pa=$REBUILD_PA" >> $GITHUB_OUTPUT
+          echo "rebuild_stock=$REBUILD_STOCK" >> $GITHUB_OUTPUT
+          echo "rebuild_backend=$REBUILD_BACKEND" >> $GITHUB_OUTPUT
+          echo "rebuild_all=$REBUILD_ALL" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
+          chmod 600 ~/.ssh/key.pem
+          ssh-keyscan -H ec2-13-232-35-109.ap-south-1.compute.amazonaws.com >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ec2-13-232-35-109.ap-south-1.compute.amazonaws.com
+          EC2_USER: ec2-user
+          REBUILD_ADMIN: ${{ steps.changes.outputs.rebuild_admin }}
+          REBUILD_DOCTOR: ${{ steps.changes.outputs.rebuild_doctor }}
+          REBUILD_PATIENT: ${{ steps.changes.outputs.rebuild_patient }}
+          REBUILD_PA: ${{ steps.changes.outputs.rebuild_pa }}
+          REBUILD_STOCK: ${{ steps.changes.outputs.rebuild_stock }}
+          REBUILD_BACKEND: ${{ steps.changes.outputs.rebuild_backend }}
+          REBUILD_ALL: ${{ steps.changes.outputs.rebuild_all }}
+        run: |
+          ssh -i ~/.ssh/key.pem -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
+            set -e
+            
+            echo "🚀 Starting selective deployment..."
+            
+            # Navigate to project directory
+            cd /home/ec2-user/vn
+            
+            echo "📥 Pulling latest changes..."
+            git fetch origin
+            git reset --hard origin/master
+            
+            # Build list of services to rebuild
+            SERVICES_TO_REBUILD=""
+            
+            if [ "$REBUILD_ALL" = "true" ]; then
+              echo "⚠️ Rebuilding ALL services (docker-compose.yml changed)"
+              docker-compose down
+              docker-compose up -d --build
+            else
+              echo "🎯 Rebuilding only changed services..."
+              
+              if [ "$REBUILD_BACKEND" = "true" ]; then
+                echo "🔄 Rebuilding Backend..."
+                SERVICES_TO_REBUILD="\$SERVICES_TO_REBUILD backend"
+              fi
+              
+              if [ "$REBUILD_ADMIN" = "true" ]; then
+                echo "🔄 Rebuilding Admin System..."
+                SERVICES_TO_REBUILD="\$SERVICES_TO_REBUILD admin-system"
+              fi
+              
+              if [ "$REBUILD_DOCTOR" = "true" ]; then
+                echo "🔄 Rebuilding Doctor Portal..."
+                SERVICES_TO_REBUILD="\$SERVICES_TO_REBUILD doctor-portal"
+              fi
+              
+              if [ "$REBUILD_PATIENT" = "true" ]; then
+                echo "🔄 Rebuilding Patient Panel..."
+                SERVICES_TO_REBUILD="\$SERVICES_TO_REBUILD patient-panel"
+              fi
+              
+              if [ "$REBUILD_PA" = "true" ]; then
+                echo "🔄 Rebuilding PA Portal..."
+                SERVICES_TO_REBUILD="\$SERVICES_TO_REBUILD pa-portal"
+              fi
+              
+              if [ "$REBUILD_STOCK" = "true" ]; then
+                echo "🔄 Rebuilding Stock Portal..."
+                SERVICES_TO_REBUILD="\$SERVICES_TO_REBUILD stock-portal"
+              fi
+              
+              # Rebuild only changed services
+              if [ -n "\$SERVICES_TO_REBUILD" ]; then
+                echo "📦 Services to rebuild:\$SERVICES_TO_REBUILD"
+                docker-compose up -d --build\$SERVICES_TO_REBUILD
+              else
+                echo "ℹ️ No services to rebuild"
+              fi
+            fi
+            
+            echo "🧹 Cleaning up unused Docker images..."
+            docker image prune -af --filter "until=24h"
+            
+            echo "✅ Deployment completed successfully!"
+            
+            echo "📊 Container status:"
+            docker-compose ps
+          EOF
+
+      - name: Verify Deployment
+        env:
+          EC2_HOST: ec2-13-232-35-109.ap-south-1.compute.amazonaws.com
+          EC2_USER: ec2-user
+        run: |
+          ssh -i ~/.ssh/key.pem ${EC2_USER}@${EC2_HOST} << 'EOF'
+            echo "🔍 Checking service health..."
+            
+            # Get the machine's private IP
+            PRIVATE_IP=$(hostname -I | awk '{print $1}')
+            echo "Machine IP: $PRIVATE_IP"
+            
+            # Wait for services to start
+            sleep 15
+            
+            # Check if backend is responding
+            echo "Testing Backend API..."
+            curl -f http://0.0.0.0:3000/api/health || curl -f http://$PRIVATE_IP:3000/api/health || echo "⚠️ Backend health check failed"
+            
+            # Check frontend applications
+            echo "Testing Admin System..."
+            curl -f http://0.0.0.0:8081/health || echo "⚠️ Admin health check failed"
+            
+            echo "Testing Doctor Portal..."
+            curl -f http://0.0.0.0:8082/ || echo "⚠️ Doctor health check failed"
+            
+            echo "Testing Patient Panel..."
+            curl -f http://0.0.0.0:8083/ || echo "⚠️ Patient health check failed"
+            
+            echo "Testing PA Portal..."
+            curl -f http://0.0.0.0:8084/health || echo "⚠️ PA health check failed"
+            
+            echo "Testing Stock Portal..."
+            curl -f http://0.0.0.0:8085/health || echo "⚠️ Stock health check failed"
+            
+            # Check running containers
+            echo ""
+            echo "Running containers:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          EOF
+
+      - name: Cleanup SSH Key
+        if: always()
+        run: |
+          rm -f ~/.ssh/key.pem
+
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "✅ Deployment to EC2 completed successfully!"
+          echo "🌐 Access your applications at:"
+          echo "  - Admin: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8081"
+          echo "  - Doctor: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8082"
+          echo "  - Patient: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8083"
+          echo "  - PA: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8084"
+          echo "  - Stock: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8085"
+          echo "  - MongoDB UI: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8086"
+          echo "  - Backend API: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:3000"
+
+      - name: Notify Failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed! Please check the logs above."
+
