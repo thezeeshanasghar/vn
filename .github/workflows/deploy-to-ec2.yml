@@ -91,43 +91,6 @@ jobs:
           echo "rebuild_backend=$REBUILD_BACKEND" >> $GITHUB_OUTPUT
           echo "rebuild_all=$REBUILD_ALL" >> $GITHUB_OUTPUT
 
-      - name: Setup SSH Key
-        run: |
-          set -e
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          
-          # Write SSH key from GitHub Secrets
-          echo "Using SSH key from GitHub Secrets..."
-          # Use printf to preserve newlines properly
-          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
-          
-          # Validate key file exists and has content
-          if [ ! -s ~/.ssh/key.pem ]; then
-            echo "❌ Error: SSH key file is empty or missing"
-            exit 1
-          fi
-          
-          # Set proper permissions
-          chmod 600 ~/.ssh/key.pem
-          
-          # Verify key format
-          if ! grep -q "BEGIN.*PRIVATE KEY" ~/.ssh/key.pem; then
-            echo "❌ Error: SSH key format appears invalid"
-            exit 1
-          fi
-          
-          echo "✅ SSH key file created successfully"
-          
-          # Add EC2 host to known_hosts (with retry logic)
-          echo "Adding EC2 host to known_hosts..."
-          if ! ssh-keyscan -H 13.203.238.30 >> ~/.ssh/known_hosts 2>&1; then
-            echo "⚠️ Warning: ssh-keyscan failed, but continuing..."
-          fi
-          
-          chmod 644 ~/.ssh/known_hosts
-          echo "✅ SSH setup completed"
-
       - name: Deploy to EC2
         env:
           EC2_HOST: 13.203.238.30
@@ -140,7 +103,12 @@ jobs:
           REBUILD_BACKEND: ${{ steps.changes.outputs.rebuild_backend }}
           REBUILD_ALL: ${{ steps.changes.outputs.rebuild_all }}
         run: |
-          ssh -i ~/.ssh/key.pem -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
+          # Create SSH key file and connect directly
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
+          chmod 600 ~/.ssh/key.pem
+          
+          ssh -i ~/.ssh/key.pem -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << REMOTE_SCRIPT
             set -e
             
             echo "🚀 Starting selective deployment..."
@@ -196,7 +164,7 @@ jobs:
               # Rebuild only changed services
               if [ -n "\$SERVICES_TO_REBUILD" ]; then
                 echo "📦 Services to rebuild:\$SERVICES_TO_REBUILD"
-                docker-compose up -d --build\$SERVICES_TO_REBUILD
+                docker-compose up -d --build \$SERVICES_TO_REBUILD
               else
                 echo "ℹ️ No services to rebuild"
               fi
@@ -209,14 +177,19 @@ jobs:
             
             echo "📊 Container status:"
             docker-compose ps
-          EOF
+          REMOTE_SCRIPT
 
       - name: Verify Deployment
         env:
           EC2_HOST: 13.203.238.30
           EC2_USER: ec2-user
         run: |
-          ssh -i ~/.ssh/key.pem ${EC2_USER}@${EC2_HOST} << 'EOF'
+          # Create SSH key file and connect directly
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
+          chmod 600 ~/.ssh/key.pem
+          
+          ssh -i ~/.ssh/key.pem -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << 'EOF'
             echo "🔍 Checking service health..."
             
             # Get the machine's private IP
