@@ -95,11 +95,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
           chmod 600 ~/.ssh/key.pem
-          ssh-keyscan -H 15.206.122.138 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 13.203.238.30 >> ~/.ssh/known_hosts
 
       - name: Deploy to EC2
         env:
-          EC2_HOST: 15.206.122.138
+          EC2_HOST: 13.203.238.30
           EC2_USER: ec2-user
           REBUILD_ADMIN: ${{ steps.changes.outputs.rebuild_admin }}
           REBUILD_DOCTOR: ${{ steps.changes.outputs.rebuild_doctor }}
@@ -115,6 +115,7 @@ jobs:
             echo "🚀 Starting selective deployment..."
             
             # Navigate to project directory
+            mkdir -p /home/ec2-user/vn
             cd /home/ec2-user/vn
             
             echo "📥 Pulling latest changes..."
@@ -181,7 +182,7 @@ jobs:
 
       - name: Verify Deployment
         env:
-          EC2_HOST: 15.206.122.138
+          EC2_HOST: 13.203.238.30
           EC2_USER: ec2-user
         run: |
           ssh -i ~/.ssh/key.pem ${EC2_USER}@${EC2_HOST} << 'EOF'
@@ -230,13 +231,13 @@ jobs:
         run: |
           echo "✅ Deployment to EC2 completed successfully!"
           echo "🌐 Access your applications at:"
-          echo "  - Admin: http://15.206.122.138:8081"
-          echo "  - Doctor: http://15.206.122.138:8082"
-          echo "  - Patient: http://15.206.122.138:8083"
-          echo "  - PA: http://15.206.122.138:8084"
-          echo "  - Stock: http://15.206.122.138:8085"
-          echo "  - MongoDB UI: http://15.206.122.138:8086"
-          echo "  - Backend API: http://15.206.122.138:3000"
+          echo "  - Admin: http://13.203.238.30:8081"
+          echo "  - Doctor: http://13.203.238.30:8082"
+          echo "  - Patient: http://13.203.238.30:8083"
+          echo "  - PA: http://13.203.238.30:8084"
+          echo "  - Stock: http://13.203.238.30:8085"
+          echo "  - MongoDB UI: http://13.203.238.30:8086"
+          echo "  - Backend API: http://13.203.238.30:3000"
 
       - name: Notify Failure
         if: failure()
