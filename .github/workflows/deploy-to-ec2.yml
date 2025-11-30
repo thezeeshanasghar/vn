@@ -12,6 +12,7 @@ on:
       - 'stock/**'
       - 'backend/**'
       - 'docker-compose.yml'
+      - '.github/workflows/**'  # Trigger on workflow changes
   workflow_dispatch: # Allow manual trigger
 
 jobs:
