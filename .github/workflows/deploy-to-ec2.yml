@@ -92,8 +92,47 @@ jobs:
 
       - name: Setup SSH Key
         run: |
+          set -e
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
+          
+          # Write SSH key (use the secret or fallback to embedded key)
+          if [ -n "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "Using SSH key from GitHub Secrets..."
+            echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
+          else
+            echo "Using embedded SSH key..."
+            cat > ~/.ssh/key.pem << 'EOF'
+          -----BEGIN RSA PRIVATE KEY-----
+          MIIEpAIBAAKCAQEAp+uG1c+J12fgCQgF37+MwWDPMYDF8ahClH12jUOorPJRWaLB
+          jVLJ8YpuHVM9zLsbzgsMrI6UDE1UhQAatKX8OAQN68NaO4WHxsB5nNN0ZxWmaWX3
+          mgKk/YzGYyotzHmJEXqbmE0xMq7zpV3EsJ1OjZDj+rG68RFy9sNIEMopxlevHrE4
+          4ocVmsddoRzi/zGd+u/q//vtz7HzcKkdvjgOa5qVjgt0O0VCc41WMw9EPewBfW8r
+          fr2dbJp0CaGvlIf8w9RTtjOfE/3RXYUCeLLJtC46oE3UEbZ7nJeA7hOMw7/kvVYp
+          igmmBUwOZ/1ZrPbkG6q8kBRC/hd5l7+NQKh/hwIDAQABAoIBAHPQlUnIf4iq4zE3
+          cF23DoydianZ6CxZYbpqoiaiYKcP5h3NjHM9g3ztfi8Jp5kZ//5nTpGBMQkfGMk2
+          njS0OrYjzborHYPqABCL1hTdHu6uVv1gz5pQcp1Rx87DW50owenlR4WOz/zl/7Ox
+          baRmirRHF4ZjqMz1vPYHECBMXu2lk6KqucplI2I6AY4ONeeufZa2woYoLB20W08I
+          xr4orCM4w9Qt7uXpK7bExL4/kNh6UaJT9wP+alNJFqkI3PVBdUiu5Y7HxqWsw0d/
+          OXtcI+l9sjUVEAD6wtIAXI7SShabc6dNpYnjiX4naUuUp5+F82lDal8TxAJER9tF
+          Fpr/8aECgYEA3yxzThLCxaGXzmJXFhSv3qEnf59Rn47h7k5A4Cm0+bltm1mHjweo
+          ZIscSp/b/CZm2zZx9lXgU1GWX9qpLI2HfHtrx38O+dMilXRkiWAPjgXfxrbKO+Pf
+          Pwvj1jJXcYB8CamTJ6xV+nTkkjR55uZb0uiD2fIHME9xZxo4TNwtZnECgYEAwJ6D
+          03W9IdjWu6cwHhwid6Mc8+7UK1273nG2x2GfT+pEuXnsg0MS8BakdknN2J166Lup
+          TiXK1HxajniWvFHPWuWMo/KbK7XKTNZwlx8NC2JE8I1U9zJoLitz6KEzpIx+A4LO
+          W6dQXkZZADVQlRz3ckc5glm8bblp34sQixm2cXcCgYEAyxC3GiMX9pvCdZglhYHt
+          RLV+KzHcI0LvcNbjURSiB1gh02jzX8GoB1RMudobYKPQk0ZHC824ABgMq8tag5+D
+          2FC1ESEbj1X98d+mWxl9Dc1qgHVyLmx5hfRbq1rDFhPCyUfzDfZRhUM3d5EoGmEg
+          zBelYXpH8D1ZAmdpMwZkiQECgYEAm1t+4gB1wqX9VC9d3Ps+RZZ3FLxNvoiErb6z
+          +I5hi3hdY+fV/m0MCj+I+KtAbvVdm/c4cAKFXOrLs1vJ4Cxv/VVmIRndU9z1RRI0
+          j38I62SgTBECNbsfUhXUEA5s88wpGzXWsQ/6/37n7AYUb6CEaFTQKrWsCCfjH90v
+          Q7JCd7MCgYBZLMGjVhO9qfpVUR143yHysdPuJGrKqu55hLx44hzUkydGaxPzukzC
+          Tq4dnyPOZKSv5S5RX/xuodC/532kdMkknkJiJQgVjBo5pMeZocjp7/j6I8MhNivB
+          arA27AeHz6o2GAM4my1lq+l1nR84ZByFOm01lmRSmeslZEJAdLr47A==
+          -----END RSA PRIVATE KEY-----
+          EOF
+          fi
+          
+          # Set proper permissions
           chmod 600 ~/.ssh/key.pem
           ssh-keyscan -H 13.203.238.30 >> ~/.ssh/known_hosts
 
