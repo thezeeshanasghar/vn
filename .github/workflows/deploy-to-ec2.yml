@@ -138,7 +138,7 @@ jobs:
           # Add EC2 host to known_hosts with retry logic
           echo "Adding EC2 host to known_hosts..."
           for i in 1 2 3; do
-            if ssh-keyscan -H ec2-13-232-35-109.ap-south-1.compute.amazonaws.com >> ~/.ssh/known_hosts 2>/dev/null; then
+            if ssh-keyscan -H ec2-15-206-122-138.ap-south-1.compute.amazonaws.com >> ~/.ssh/known_hosts 2>/dev/null; then
               echo "✅ Successfully added host to known_hosts"
               break
             else
@@ -157,7 +157,7 @@ jobs:
 
       - name: Deploy to EC2
         env:
-          EC2_HOST: ec2-13-232-35-109.ap-south-1.compute.amazonaws.com
+          EC2_HOST: 15.206.122.138
           EC2_USER: ec2-user
           REBUILD_ADMIN: ${{ steps.changes.outputs.rebuild_admin }}
           REBUILD_DOCTOR: ${{ steps.changes.outputs.rebuild_doctor }}
@@ -239,7 +239,7 @@ jobs:
 
       - name: Verify Deployment
         env:
-          EC2_HOST: ec2-13-232-35-109.ap-south-1.compute.amazonaws.com
+          EC2_HOST: 15.206.122.138
           EC2_USER: ec2-user
         run: |
           ssh -i ~/.ssh/key.pem ${EC2_USER}@${EC2_HOST} << 'EOF'
@@ -288,13 +288,13 @@ jobs:
         run: |
           echo "✅ Deployment to EC2 completed successfully!"
           echo "🌐 Access your applications at:"
-          echo "  - Admin: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8081"
-          echo "  - Doctor: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8082"
-          echo "  - Patient: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8083"
-          echo "  - PA: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8084"
-          echo "  - Stock: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8085"
-          echo "  - MongoDB UI: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:8086"
-          echo "  - Backend API: http://ec2-13-232-35-109.ap-south-1.compute.amazonaws.com:3000"
+          echo "  - Admin: http://15.206.122.138:8081"
+          echo "  - Doctor: http://15.206.122.138:8082"
+          echo "  - Patient: http://15.206.122.138:8083"
+          echo "  - PA: http://15.206.122.138:8084"
+          echo "  - Stock: http://15.206.122.138:8085"
+          echo "  - MongoDB UI: http://15.206.122.138:8086"
+          echo "  - Backend API: http://15.206.122.138:3000"
 
       - name: Notify Failure
         if: failure()
